@@ -6,7 +6,33 @@ TARGET_IPV4="10.10.1.2"
 
 PING_ARGS="-D -i 1.0 -s 56"
 
-CONTAINER_COUNTS=( 1 2 )
+CONTAINER_COUNTS=(
+#   1
+#   2
+#   3
+#   5
+#   7
+#   11
+#   17
+#   25
+#   38
+#   57
+#   86
+   129
+#   291
+#   437
+#   656
+#   985
+#   1477
+#   2216
+#   3325
+#   4987
+#   7481
+#   11222
+#   16834
+#   25251
+)
+# Logarithmic number of containers: [int(1.5 ** x) for x in range(27)]
 
 NATIVE_PING_CMD="${HOME}/contools-eval/iputils/ping"
 CONTAINER_PING_CMD="/iputils/ping"
@@ -58,6 +84,8 @@ $PAUSE_CMD
 
 for n_containers in ${CONTAINER_COUNTS[@]}; do
 
+	echo $B Container run $B
+
 	# Start ping container as service
 	i=1
 	while [ "$i" -le "$n_containers" ]; do
@@ -71,7 +99,6 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 
 	$PAUSE_CMD
 
-	echo $B Container control $B
 
 	echo "${n_containers}containers_${TARGET_IPV4}.ping" >> $MANIFEST
 	docker exec ${PING_CONTAINER_NAME}1 \
