@@ -1,0 +1,10 @@
+20190107012837:
+
+(using linux bridge)
+
+last run (1477 containers) ran into bridge overflow:
+```
+docker: Error response from daemon: failed to create endpoint ping-container1477 on network bridge: adding interface veth700eb8e to bridge docker0 failed: exchange full.
+```
+
+There seems to be a latency spike in the 6 trials before this.
