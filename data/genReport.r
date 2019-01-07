@@ -8,6 +8,8 @@ if (length(args) != 1) {
 data_path <- args[1]
 target <- "10.10.1.2"
 
+n_containers <- c(0, 1, 2, 3, 5, 7, 11, 17, 25, 38, 57, 86, 129, 291, 437, 656, 985)
+
 #
 # Read and parse a dump from ping
 #
@@ -54,11 +56,14 @@ while (T) {
   cat("File:", line, "\n")
   cat("  mean:", mean(pings$rtt), "(us)\n")
 
-  means <- c(means, mean(pings$rtt))
-  files <- c(files, line)
+  if (length(pings$rtt) != 0) {
+    means <- c(means, mean(pings$rtt))
+    files <- c(files, line)
+  }
 }
 close(con)
 
 pdf(file=paste(data_path, "/means.pdf", sep=""), width=5, height=5)
-plot(means, type="b")
+plot(means, type="b", ylim=c(0, max(means)), xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")))
+axis(1, at=seq(1,length(n_containers)), labels=n_containers, las=2)
 dev.off()
