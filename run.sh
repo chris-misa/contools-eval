@@ -6,7 +6,10 @@ TARGET_IPV4="10.10.1.2"
 
 PING_ARGS="-D -i 1.0 -s 56"
 
+NETWORK="ovsnet"
+
 CONTAINER_COUNTS=(
+1 2 3
 #   1
 #   2
 #   3
@@ -18,7 +21,7 @@ CONTAINER_COUNTS=(
 #   38
 #   57
 #   86
-   129
+#   129
 #   291
 #   437
 #   656
@@ -92,6 +95,7 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 		docker run -itd \
 		  --name=${PING_CONTAINER_NAME}${i} \
 		  --entrypoint=/bin/bash \
+		  --net=$NETWORK \
 		  $PING_CONTAINER_IMAGE > /dev/null
 		i=$(($i + 1))
 	done
