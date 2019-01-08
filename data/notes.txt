@@ -1,6 +1,7 @@
+(using linux bridge)
+
 20190107012837:
 
-(using linux bridge)
 
 last run (1477 containers) ran into bridge overflow:
 ```
@@ -8,3 +9,9 @@ docker: Error response from daemon: failed to create endpoint ping-container1477
 ```
 
 There seems to be a latency spike in the 6 trials before this.
+
+
+20190107134045: (~100 per run)
+20190107184349: (~500 per run)
+
+Seemingly linear increase in latency as containers increase from 10 to 300.

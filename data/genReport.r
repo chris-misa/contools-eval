@@ -8,7 +8,9 @@ if (length(args) != 1) {
 data_path <- args[1]
 target <- "10.10.1.2"
 
-n_containers <- c(0, 1, 2, 3, 5, 7, 11, 17, 25, 38, 57, 86, 129, 291, 437, 656, 985)
+#n_containers <- c(0, 1, 2, 3, 5, 7, 11, 17, 25, 38, 57, 86, 129, 291, 437, 656, 985)
+
+n_containers <- seq(from=0, to=300, by=10)
 
 #
 # Read and parse a dump from ping
@@ -37,11 +39,21 @@ readPingFile <- function(filePath) {
   data.frame(rtt=rtts, ts=timestamps)
 }
 
+drawArrowsCenters <- function(ys, belows, aboves, color, centers) {
+  arrows(centers, ys - belows,
+         centers, ys + aboves,
+         length=0.05, angle=90, code=3, col=color)
+}
+
+
 #
-# Read files from manifest
+# Main Work: read files from manifest
 #
 
 means <- c()
+sds <- c()
+mins <- c()
+maxs <- c()
 files <- c()
 
 con <- file(paste(data_path, "/manifest", sep=""), "r")
@@ -58,12 +70,25 @@ while (T) {
 
   if (length(pings$rtt) != 0) {
     means <- c(means, mean(pings$rtt))
+    sds <- c(sds, sd(pings$rtt))
+    mins <- c(mins, min(pings$rtt))
+    maxs <- c(maxs, max(pings$rtt))
     files <- c(files, line)
   }
 }
 close(con)
 
-pdf(file=paste(data_path, "/means.pdf", sep=""), width=5, height=5)
-plot(means, type="b", ylim=c(0, max(means)), xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")))
-axis(1, at=seq(1,length(n_containers)), labels=n_containers, las=2)
+pdf(file=paste(data_path, "/means.pdf", sep=""), width=6.5, height=5)
+ybnds <- c(0, max(means + sds))
+
+plot(means, type="b", ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+lines(mins, type="b", ylim=ybnds, lty=2, col="gray")
+axis(1, at=seq(1, length(n_containers)), labels=n_containers, las=2)
+grid()
+
+
+# barCenters <- barplot(means, ylim=ybnds, xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")))
+# drawArrowsCenters(means, mins, sds, "black", barCenters)
+# axis(1, at=barCenters, labels=n_containers, las=2)
+
 dev.off()
