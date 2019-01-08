@@ -9,7 +9,7 @@ PING_ARGS="-D -i 1.0 -s 56"
 NETWORK="ovsnet"
 
 CONTAINER_COUNTS=(
-1 2 3
+`seq 10 10 30`
 #   1
 #   2
 #   3
