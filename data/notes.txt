@@ -24,7 +24,8 @@ Or, gopher-net just can't deal with more the c.a. 60 containers. . .
 
 20190108160600: (Each container pinging at 1 pps)
 
-Greater increase
+Since each container competes for network, greater effect on latency.
+
 
 
 20190109005654: (Different topologies with all at -i 0)
@@ -32,15 +33,25 @@ Greater increase
 Slight increase when traffic also goes through bridge.
 
 
-Current:
+20190109000513:
+OVS with docker-compose integration:
+0 to 60 at 1000 samples each (-i 1.0)
 
-'paths' running -i 0 from 0 to 500 containers on linux bridge network.
+Hard to tell from limited sample range, but seems like the same trend. . .
 
-'thousand' extention of previous experiments to 1K containers.
-Going on and on. . .
 
-'ovsTest'
-with docker-compose integration. . . still not scaling. . .give up?
-0 to 60 at 1000 samples each
-Ready C.A. 3am
 
+20190109010656:
+-i 0 from 0 to 500 containers on linux bridge network.
+
+Seems like no increase, probably due to caching in the bridge / iptables.
+
+
+20190109110515:
+-i 0, 0 to 500 containers on linux bridge with other containers
+pinging at -i 1.0
+
+
+Future Ideas:
+
+Instructions per packet?
