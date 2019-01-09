@@ -55,6 +55,8 @@ sds <- c()
 mins <- c()
 maxs <- c()
 files <- c()
+ecdfs <- c()
+num_ecdfs <- cbind()
 
 con <- file(paste(data_path, "/manifest", sep=""), "r")
 while (T) {
@@ -74,21 +76,47 @@ while (T) {
     mins <- c(mins, min(pings$rtt))
     maxs <- c(maxs, max(pings$rtt))
     files <- c(files, line)
+    new_ecdf <- ecdf(pings$rtt)
+    ecdfs <- c(ecdfs, new_ecdf)
+    num_ecdfs <- cbind(num_ecdfs, new_ecdf(seq(0,500, 0.1)))
+
+    #
+    # Make cdfs for reference
+    #
+    # pdf(file=paste(data_path, "/", line, "_cdf.pdf", sep=""))
+    # fn <- ecdf(pings$rtt)
+    # plot(fn)
+    # dev.off()
   }
 }
 close(con)
 
+#
+# Draw means line-graph
+#
 pdf(file=paste(data_path, "/means.pdf", sep=""), width=6.5, height=5)
 ybnds <- c(0, max(means + sds))
 
-plot(means, type="b", ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
-lines(mins, type="b", ylim=ybnds, lty=2, col="gray")
-axis(1, at=seq(1, length(n_containers)), labels=n_containers, las=2)
+# image(seq(0,30), seq(0,500,0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+
+plot(seq(0,30), means, type="b", ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+
 grid()
 
+lines(seq(0,30), mins, type="b", ylim=ybnds, lty=2, col="gray")
+axis(1, at=seq(1, length(n_containers)), labels=n_containers, las=2)
 
-# barCenters <- barplot(means, ylim=ybnds, xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")))
-# drawArrowsCenters(means, mins, sds, "black", barCenters)
-# axis(1, at=barCenters, labels=n_containers, las=2)
+dev.off()
+
+#
+# Draw heatmap
+#
+pdf(file=paste(data_path, "/cdf_map.pdf", sep=""), width=6.5, height=5)
+
+image(seq(0,30), seq(0,500,0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+
+grid()
+axis(1, at=seq(1, length(n_containers)), labels=n_containers, las=2)
+
 
 dev.off()

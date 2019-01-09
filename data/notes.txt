@@ -15,3 +15,7 @@ There seems to be a latency spike in the 6 trials before this.
 20190107184349: (~500 per run)
 
 Seemingly linear increase in latency as containers increase from 10 to 300.
+
+
+
+Gopher-net is not removing veths when containers are removed and the iface pool is getting saturated.
