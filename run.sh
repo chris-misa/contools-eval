@@ -7,7 +7,7 @@ TARGET_IPV4="10.10.1.2"
 PING_ARGS="-D -i 1.0 -s 56"
 
 # Careful: always change this in docker compose file too!
-NETWORK="ovsnet"
+NETWORK="bridge"
 
 
 CONTAINER_COUNTS=(

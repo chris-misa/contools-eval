@@ -1,6 +1,6 @@
 ping:
         image: chrismisa/contools:ping-ubuntu
-        net: ovsnet
+        net: bridge
         entrypoint: /bin/bash
         tty: true
         stdin_open: true
