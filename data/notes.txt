@@ -19,3 +19,18 @@ Seemingly linear increase in latency as containers increase from 10 to 300.
 
 
 Gopher-net is not removing veths when containers are removed and the iface pool is getting saturated.
+
+
+20190108160600: (Each container pinging at 1 pps)
+
+Greater increase
+
+Current:
+
+'thousand' extention of previous experiments to 1K containers.
+should be done around 21:00
+
+'ovsTest'
+with docker-compose integration. . . still not scaling. . .give up?
+
+Just booting up for some more OVS testing.

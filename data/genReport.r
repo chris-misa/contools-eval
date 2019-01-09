@@ -56,7 +56,6 @@ mins <- c()
 maxs <- c()
 files <- c()
 ecdfs <- c()
-num_ecdfs <- cbind()
 
 con <- file(paste(data_path, "/manifest", sep=""), "r")
 while (T) {
@@ -78,7 +77,6 @@ while (T) {
     files <- c(files, line)
     new_ecdf <- ecdf(pings$rtt)
     ecdfs <- c(ecdfs, new_ecdf)
-    num_ecdfs <- cbind(num_ecdfs, new_ecdf(seq(0,500, 0.1)))
 
     #
     # Make cdfs for reference
@@ -91,11 +89,20 @@ while (T) {
 }
 close(con)
 
+ybnds <- c(0, max(means + sds))
+
+#
+# Evaluate ecdfs into matrix for heatmap
+#
+num_ecdfs <- cbind()
+for (new_ecdf in ecdfs) {
+    num_ecdfs <- cbind(num_ecdfs, new_ecdf(seq(ybnds[[1]],ybnds[[2]], 0.1)))
+}
+
 #
 # Draw means line-graph
 #
 pdf(file=paste(data_path, "/means.pdf", sep=""), width=6.5, height=5)
-ybnds <- c(0, max(means + sds))
 
 # image(seq(0,30), seq(0,500,0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
 
@@ -104,7 +111,7 @@ plot(seq(0,30), means, type="b", ylim=ybnds, xaxt="n", xlab="Number of container
 grid()
 
 lines(seq(0,30), mins, type="b", ylim=ybnds, lty=2, col="gray")
-axis(1, at=seq(1, length(n_containers)), labels=n_containers, las=2)
+axis(1, at=seq(0, length(n_containers) - 1), labels=n_containers, las=2)
 
 dev.off()
 
@@ -113,10 +120,10 @@ dev.off()
 #
 pdf(file=paste(data_path, "/cdf_map.pdf", sep=""), width=6.5, height=5)
 
-image(seq(0,30), seq(0,500,0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+image(seq(0,30), seq(ybnds[[1]],ybnds[[2]],0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
 
 grid()
-axis(1, at=seq(1, length(n_containers)), labels=n_containers, las=2)
+axis(1, at=seq(0, length(n_containers) - 1), labels=n_containers, las=2)
 
 
 dev.off()
