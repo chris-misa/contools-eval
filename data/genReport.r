@@ -10,7 +10,9 @@ target <- "10.10.1.2"
 
 #n_containers <- c(0, 1, 2, 3, 5, 7, 11, 17, 25, 38, 57, 86, 129, 291, 437, 656, 985)
 
-n_containers <- seq(from=0, to=300, by=10)
+# n_containers <- seq(from=0, to=300, by=10)
+# n_containers <- c(0, seq(0, 60, 5))
+n_containers <- c("Native", "Local", "Same", "Different")
 
 #
 # Read and parse a dump from ping
@@ -106,11 +108,12 @@ pdf(file=paste(data_path, "/means.pdf", sep=""), width=6.5, height=5)
 
 # image(seq(0,30), seq(0,500,0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
 
-plot(seq(0,30), means, type="b", ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+plot(seq(0,length(means)-1), means, type="b", ylim=ybnds, xaxt="n", xlab="", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+# plot(seq(0,length(means)-1), means, type="b", ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
 
 grid()
 
-lines(seq(0,30), mins, type="b", ylim=ybnds, lty=2, col="gray")
+lines(seq(0,length(means)-1), mins, type="b", ylim=ybnds, lty=2, col="gray")
 axis(1, at=seq(0, length(n_containers) - 1), labels=n_containers, las=2)
 
 dev.off()
@@ -120,7 +123,8 @@ dev.off()
 #
 pdf(file=paste(data_path, "/cdf_map.pdf", sep=""), width=6.5, height=5)
 
-image(seq(0,30), seq(ybnds[[1]],ybnds[[2]],0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+image(seq(0,length(means)-1), seq(ybnds[[1]],ybnds[[2]],0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+# image(seq(0,length(means)-1), seq(ybnds[[1]],ybnds[[2]],0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
 
 grid()
 axis(1, at=seq(0, length(n_containers) - 1), labels=n_containers, las=2)

@@ -1,0 +1,4 @@
+native_control_10.10.1.2.ping
+local_traffic_10.10.1.2.ping
+same_container_traffic_10.10.1.2.ping
+different_container_traffic_10.10.1.2.ping

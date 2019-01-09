@@ -1,6 +1,6 @@
 (using linux bridge)
 
-20190107012837:
+20190107012837 (at -i 1):
 
 
 last run (1477 containers) ran into bridge overflow:
@@ -11,26 +11,36 @@ docker: Error response from daemon: failed to create endpoint ping-container1477
 There seems to be a latency spike in the 6 trials before this.
 
 
-20190107134045: (~100 per run)
-20190107184349: (~500 per run)
+20190107134045: (~100 per run, all at -i 1)
+20190107184349: (~500 per run, all at -i 1)
 
 Seemingly linear increase in latency as containers increase from 10 to 300.
 
 
 
 Gopher-net is not removing veths when containers are removed and the iface pool is getting saturated.
+Or, gopher-net just can't deal with more the c.a. 60 containers. . .
 
 
 20190108160600: (Each container pinging at 1 pps)
 
 Greater increase
 
+
+20190109005654: (Different topologies with all at -i 0)
+
+Slight increase when traffic also goes through bridge.
+
+
 Current:
 
+'paths' running -i 0 from 0 to 500 containers on linux bridge network.
+
 'thousand' extention of previous experiments to 1K containers.
-should be done around 21:00
+Going on and on. . .
 
 'ovsTest'
 with docker-compose integration. . . still not scaling. . .give up?
+0 to 60 at 1000 samples each
+Ready C.A. 3am
 
-Just booting up for some more OVS testing.
