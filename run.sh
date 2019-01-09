@@ -6,10 +6,13 @@ TARGET_IPV4="10.10.1.2"
 
 PING_ARGS="-D -i 1.0 -s 56"
 
+# Careful: always change this in docker compose file too!
 NETWORK="ovsnet"
 
+
 CONTAINER_COUNTS=(
-`seq 10 10 30`
+#`seq 10 10 30`
+100
 #   1
 #   2
 #   3
@@ -43,6 +46,8 @@ CONTAINER_PING_CMD="/iputils/ping"
 PING_CONTAINER_IMAGE="chrismisa/contools:ping-ubuntu"
 PING_CONTAINER_NAME="ping-container"
 
+COMPOSE_FILE="${HOME}/contools-eval/ping_compose/docker-compose.yml"
+
 PAUSE_CMD="sleep 5"
 PING_PAUSE_CMD="sleep 10"
 
@@ -62,24 +67,25 @@ echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
 #
 # Native run
 #
-echo $B Native control $B
-# Run ping in background
-echo "native_control_${TARGET_IPV4}.ping" >> $MANIFEST
-$NATIVE_PING_CMD $PING_ARGS $TARGET_IPV4 \
-  > native_control_${TARGET_IPV4}.ping &
-echo "  pinging. . ."
 
-$PAUSE_CMD
-
-PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
-echo "  got ping pid: $PING_PID"
-
-$PING_PAUSE_CMD
-
-kill -INT $PING_PID
-echo "  killed ping"
-
-$PAUSE_CMD
+# echo $B Native control $B
+# # Run ping in background
+# echo "native_control_${TARGET_IPV4}.ping" >> $MANIFEST
+# $NATIVE_PING_CMD $PING_ARGS $TARGET_IPV4 \
+#   > native_control_${TARGET_IPV4}.ping &
+# echo "  pinging. . ."
+# 
+# $PAUSE_CMD
+# 
+# PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
+# echo "  got ping pid: $PING_PID"
+# 
+# $PING_PAUSE_CMD
+# 
+# kill -INT $PING_PID
+# echo "  killed ping"
+# 
+# $PAUSE_CMD
 
 #
 # Container pings
@@ -90,22 +96,16 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 	echo $B Container run $B
 
 	# Start ping container as service
-	i=1
-	while [ "$i" -le "$n_containers" ]; do
-		docker run -itd \
-		  --name=${PING_CONTAINER_NAME}${i} \
-		  --entrypoint=/bin/bash \
-		  --net=$NETWORK \
-		  $PING_CONTAINER_IMAGE > /dev/null
-		i=$(($i + 1))
-	done
-	echo $B Started $n_containers containers $B
+	docker-compose -f $COMPOSE_FILE up -d --scale ping=$n_containers
+	docker run -itd --name=$PING_CONTAINER_NAME \
+		--net=$NETWORK --entrypoint=/bin/bash \
+		$PING_CONTAINER_IMAGE
 
 	$PAUSE_CMD
 
 
 	echo "${n_containers}containers_${TARGET_IPV4}.ping" >> $MANIFEST
-	docker exec ${PING_CONTAINER_NAME}1 \
+	docker exec ${PING_CONTAINER_NAME} \
 	  $CONTAINER_PING_CMD $PING_ARGS $TARGET_IPV4 \
 	  > ${n_containers}containers_${TARGET_IPV4}.ping &
 	echo "  pinging. . . "
@@ -123,12 +123,9 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 	$PAUSE_CMD
 
 	# Stop the containers
-	i=1
-	while [ "$i" -le "$n_containers" ]; do
-		docker stop ${PING_CONTAINER_NAME}${i} > /dev/null
-		docker rm ${PING_CONTAINER_NAME}${i} > /dev/null
-		i=$(($i + 1))
-	done
+	docker-compose -f $COMPOSE_FILE down
+	docker stop ${PING_CONTAINER_NAME} > /dev/null
+	docker rm ${PING_CONTAINER_NAME} > /dev/null
 	echo $B Stopped $n_containers containers $B
 done
 
