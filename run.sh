@@ -11,8 +11,7 @@ NETWORK="ovsnet"
 
 
 CONTAINER_COUNTS=(
-#`seq 10 10 30`
-100
+`seq 0 5 20`
 #   1
 #   2
 #   3
@@ -68,24 +67,24 @@ echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
 # Native run
 #
 
-# echo $B Native control $B
-# # Run ping in background
-# echo "native_control_${TARGET_IPV4}.ping" >> $MANIFEST
-# $NATIVE_PING_CMD $PING_ARGS $TARGET_IPV4 \
-#   > native_control_${TARGET_IPV4}.ping &
-# echo "  pinging. . ."
-# 
-# $PAUSE_CMD
-# 
-# PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
-# echo "  got ping pid: $PING_PID"
-# 
-# $PING_PAUSE_CMD
-# 
-# kill -INT $PING_PID
-# echo "  killed ping"
-# 
-# $PAUSE_CMD
+echo $B Native control $B
+# Run ping in background
+echo "native_control_${TARGET_IPV4}.ping" >> $MANIFEST
+$NATIVE_PING_CMD $PING_ARGS $TARGET_IPV4 \
+  > native_control_${TARGET_IPV4}.ping &
+echo "  pinging. . ."
+
+$PAUSE_CMD
+
+PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
+echo "  got ping pid: $PING_PID"
+
+$PING_PAUSE_CMD
+
+kill -INT $PING_PID
+echo "  killed ping"
+
+$PAUSE_CMD
 
 #
 # Container pings
