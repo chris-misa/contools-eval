@@ -1,6 +1,6 @@
 ping:
-        image: chrismisa/contools:ping-ubuntu
-        net: bridge
-        entrypoint: /bin/bash
+        image: ${PING_CONTAINER_IMAGE}
+        net: ${NETWORK}
+        entrypoint: ${CONTAINER_PING_CMD} ${BG_PING_ARGS}
         tty: true
         stdin_open: true
