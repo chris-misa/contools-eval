@@ -1,47 +1,10 @@
 #!/bin/bash
 
-B="----------------"
 
 # TARGET_IPV4="10.10.1.2"
 
-PING_ARGS="-D -i 0.0 -s 56 -c 1000"
 
-# Arguments handed to ping in background containers
-export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
-
-export NETWORK="bridge"
-
-
-CONTAINER_COUNTS=(
-`seq 0 1 20`
-#   1
-#   2
-#   3
-#   5
-#   7
-#   11
-#   17
-#   25
-#   38
-#   57
-#   86
-#   129
-#   291
-#   437
-#   656
-#   985
-#   1477
-#   2216
-#   3325
-#   4987
-#   7481
-#   11222
-#   16834
-#   25251
-)
-# Logarithmic number of containers: [int(1.5 ** x) for x in range(27)]
-
-NATIVE_PING_CMD="${HOME}/contools-eval/iputils/ping"
+export NATIVE_PING_CMD="${HOME}/contools-eval/iputils/ping"
 export CONTAINER_PING_CMD="/iputils/ping"
 
 export PING_CONTAINER_IMAGE="chrismisa/contools:ping-ubuntu"
@@ -57,8 +20,8 @@ DATE_TAG=`date +%Y%m%d%H%M%S`
 META_DATA="Metadata"
 MANIFEST="manifest"
 
-mkdir $DATE_TAG
-cd $DATE_TAG
+mkdir ${DATE_TAG}_CC
+cd ${DATE_TAG}_CC
 
 # Get some basic meta-data
 echo "uname -a -> $(uname -a)" >> $META_DATA
@@ -92,7 +55,7 @@ $PAUSE_CMD
 # Container pings
 #
 
-for n_containers in ${CONTAINER_COUNTS[@]}; do
+for n_containers in ${CONTAINER_COUNTS}; do
 
 	echo $B Container run $B
 
