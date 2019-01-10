@@ -4,20 +4,16 @@ B="----------------"
 
 TARGET_IPV4="10.10.1.2"
 
-PING_ARGS="-D -i 0.0 -s 56 -c 500"
+PING_ARGS="-D -i 0.0 -s 56 -c 1000"
 
 # Arguments handed to ping in background containers
-export BG_PING_ARGS="-i 0.0 -s 56 $TARGET_IPV4"
+export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
 
 export NETWORK="bridge"
 
 
 CONTAINER_COUNTS=(
-# `seq 0 5 20`
-0
-1
-2
-3
+`seq 0 1 20`
 #   1
 #   2
 #   3
@@ -115,6 +111,8 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 	docker rm ${PING_CONTAINER_NAME} > /dev/null
 	docker-compose -f $COMPOSE_FILE down
 	echo $B Stopped $n_containers containers $B
+
+	$PAUSE_CMD
 done
 
 echo Done.
