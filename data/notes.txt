@@ -52,6 +52,62 @@ Seems like no increase, probably due to caching in the bridge / iptables.
 pinging at -i 1.0
 
 
+20190109195140:
+0 to 10 extra containers all at -i 0 (linux bridge) topo: C-N
+Note: all traffic goes to same remote target.
+Probably should redo on three-node topology with bg traffic as extra node.
+
+
+20190109220006: (wisc)
+0 to 10 extra containers all at -i 0 (linux bridge) topo: C-C
+Note the 'native' run is from native host context to target container
+traversing NAT.
+Note that background containers are still sending traffic to remote host.
+
+
+20190109220141:
+Redo of 0 to 20 C-N 1K pings, bg traffic to third host.
+
+
+20190109221414: (wisc)
+Redo of 20190109220006 with 0 to 20 extra containers, 2000 pings, otherwise same.
+
+
+20190109223011:
+Redo of C-C topo 0 to 20 containers, 1K pings, bg at third host.
+
+20190109225416:
+Container to container's host, 0 to 20 containers 1K pings, bg traffic at third host.
+
+
+run1:
+  20190109235753_CN:
+  20190110012047_CH:
+  20190110024314_CC:
+Running all three topos with 0 to 100 containers, -i 0 on all, 2K packets,
+linux bridge, etc.
+
+
+
+Current: (utah)
+'threetoporedo' 
+
+
+
 Future Ideas:
 
+1 to 10 containers all pinging.
+Syscall time in different contexts>
+
+Topologies.
+
+Same machine.
+  Same Bridge.
+  
 Instructions per packet?
+
+Topos:
+(Background traffic always from containers to third-host on LAN.)
+C-N: Container to network: Container to second-host on LAN
+C-C: Container to container.
+C-H: Container to container's hosting node.
