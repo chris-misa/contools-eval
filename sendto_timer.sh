@@ -12,12 +12,12 @@ export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
 export NETWORK="bridge"
 
 TRACE_CMD_ARGS="-e syscalls:sys_enter_sendto -e syscalls:sys_exit_sendto"
-TRACE_CMD_CMD="sleep 0.1"
+TRACE_CMD_CMD="sleep 0.05"
 
 
 CONTAINER_COUNTS=(
-#`seq 0 5 20`
-0
+#`seq 0 1 20`
+10
 #   1
 #   2
 #   3
@@ -112,20 +112,17 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 	# Start ping container as service
 	docker-compose -f $COMPOSE_FILE up -d --scale ping=$n_containers
 	docker run -itd --name=$PING_CONTAINER_NAME \
-		--net=$NETWORK --entrypoint=/bin/bash \
-		$PING_CONTAINER_IMAGE
+		--net=$NETWORK --entrypoint=$CONTAINER_PING_CMD \
+		$PING_CONTAINER_IMAGE \
+		$PING_ARGS $TARGET_IPV4 \
+		> /dev/null
 
-	$PAUSE_CMD
-
-	docker exec ${PING_CONTAINER_NAME} \
-	  $CONTAINER_PING_CMD $PING_ARGS $TARGET_IPV4 \
-	  > /dev/null &
-	#  > ${n_containers}containers_${TARGET_IPV4}.ping &
 	echo "  pinging. . . "
 
 	$PAUSE_CMD
 
-	PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
+	#PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
+	PING_PID=`docker inspect $PING_CONTAINER_NAME -f '{{.State.Pid}}'`
 	echo "  got ping pid: $PING_PID"
 
 	$PAUSE_CMD
