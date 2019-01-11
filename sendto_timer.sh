@@ -4,17 +4,20 @@ B="----------------"
 
 TARGET_IPV4="10.10.1.2"
 
-PING_ARGS="-D -i 1.0 -s 56"
+PING_ARGS="-D -i 0.0 -s 56"
 
 export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
 
 # Careful: always change this in docker compose file too!
 export NETWORK="bridge"
 
+TRACE_CMD_ARGS="-e syscalls:sys_enter_sendto -e syscalls:sys_exit_sendto"
+TRACE_CMD_CMD="sleep 0.1"
+
 
 CONTAINER_COUNTS=(
 #`seq 0 5 20`
-10
+0
 #   1
 #   2
 #   3
@@ -72,9 +75,9 @@ echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
 
 echo $B Native control $B
 # Run ping in background
-echo "native_control_${TARGET_IPV4}.ping" >> $MANIFEST
 $NATIVE_PING_CMD $PING_ARGS $TARGET_IPV4 \
-  > native_control_${TARGET_IPV4}.ping &
+	> /dev/null &
+#  > native_control_${TARGET_IPV4}.ping &
 echo "  pinging. . ."
 
 $PAUSE_CMD
@@ -82,10 +85,19 @@ $PAUSE_CMD
 PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
 echo "  got ping pid: $PING_PID"
 
-$PING_PAUSE_CMD
+$PAUSE_CMD
+trace-cmd record -P $PING_PID $TRACE_CMD_ARGS $TRACE_CMD_CMD
+echo "  traced"
+
+$PAUSE_CMD
 
 kill -INT $PING_PID
 echo "  killed ping"
+
+trace-cmd report -t > native_control_${TARGET_IPV4}.trace
+echo "native_control_${TARGET_IPV4}.trace" >> $MANIFEST
+echo $B Converted trace $B
+
 
 $PAUSE_CMD
 
@@ -103,14 +115,12 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 		--net=$NETWORK --entrypoint=/bin/bash \
 		$PING_CONTAINER_IMAGE
 
-	exit 0
 	$PAUSE_CMD
 
-
-	echo "${n_containers}containers_${TARGET_IPV4}.ping" >> $MANIFEST
 	docker exec ${PING_CONTAINER_NAME} \
 	  $CONTAINER_PING_CMD $PING_ARGS $TARGET_IPV4 \
-	  > ${n_containers}containers_${TARGET_IPV4}.ping &
+	  > /dev/null &
+	#  > ${n_containers}containers_${TARGET_IPV4}.ping &
 	echo "  pinging. . . "
 
 	$PAUSE_CMD
@@ -118,10 +128,9 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 	PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
 	echo "  got ping pid: $PING_PID"
 
-	$PING_PAUSE_CMD
-
-	kill -INT $PING_PID
-	echo "  killed ping"
+	$PAUSE_CMD
+	trace-cmd record $TRACE_CMD_ARGS -P $PING_PID $TRACE_CMD_CMD
+	echo "  traced"
 
 	$PAUSE_CMD
 
@@ -130,6 +139,12 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 	docker stop ${PING_CONTAINER_NAME} > /dev/null
 	docker rm ${PING_CONTAINER_NAME} > /dev/null
 	echo $B Stopped $n_containers containers $B
+
+	trace-cmd report -t > ${n_containers}containers_${TARGET_IPV4}.trace
+	echo "${n_containers}containers_${TARGET_IPV4}.ping" >> $MANIFEST
+	echo $B Converted trace $B
 done
+
+rm trace.dat
 
 echo Done.
