@@ -16,8 +16,7 @@ TRACE_CMD_CMD="sleep 0.05"
 
 
 CONTAINER_COUNTS=(
-#`seq 0 1 20`
-10
+`seq 0 1 20`
 #   1
 #   2
 #   3
@@ -138,7 +137,7 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 	echo $B Stopped $n_containers containers $B
 
 	trace-cmd report -t > ${n_containers}containers_${TARGET_IPV4}.trace
-	echo "${n_containers}containers_${TARGET_IPV4}.ping" >> $MANIFEST
+	echo "${n_containers}containers_${TARGET_IPV4}.trace" >> $MANIFEST
 	echo $B Converted trace $B
 done
 
