@@ -12,7 +12,7 @@ export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
 export NETWORK="bridge"
 
 TRACE_CMD_ARGS="-e syscalls:sys_enter_sendto -e syscalls:sys_exit_sendto"
-TRACE_CMD_CMD="sleep 0.05"
+TRACE_CMD_CMD="sleep 0.1"
 
 
 CONTAINER_COUNTS=(
