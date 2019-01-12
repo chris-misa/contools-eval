@@ -1,6 +1,7 @@
 #!/bin/bash
 
 export B="----------------"
+export C="****************"
 
 export PING_ARGS="-D -i 0.0 -s 56 -c 2000"
 #export PING_ARGS="-D -i 0.0 -s 56 -c 100"
@@ -18,17 +19,20 @@ export DATE_STR=`date +%Y%m%d%H%M%S`
 mkdir $DATE_STR
 cd $DATE_STR
 
-for i in {0..15}; do
+for i in {0..3}; do
 
 	export DATE_TAG="${DATE_STR}_$i"
 
-	echo ${DATE_TAG}_CC >> ${DATE_STR}/manifest
-	echo ${DATE_TAG}_CH >> ${DATE_STR}/manifest
-	echo ${DATE_TAG}_CN >> ${DATE_STR}/manifest
+	echo ${DATE_TAG}_CC >> manifest
+	echo ${DATE_TAG}_CH >> manifest
+	echo ${DATE_TAG}_CN >> manifest
 
+	echo $C Container - Network $C
 	taskset --cpu-list 0-$i ../cn_run.sh
 
+	echo $C Container - Host $C
 	taskset --cpu-list 0-$i ../ch_run.sh
 
+	echo $C Container - Container $C
 	taskset --cpu-list 0-$i ../cc_run.sh
 done
