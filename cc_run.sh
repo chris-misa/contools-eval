@@ -71,6 +71,7 @@ for n_containers in ${CONTAINER_COUNTS}; do
 	$DOCKERCPUSET_CMD
 	
 	echo "  assigned CPUs"
+	ps -eH -o comm,pid,cpuid > ${n_containers}verify
 
 	$PAUSE_CMD
 
