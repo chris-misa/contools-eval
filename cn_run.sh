@@ -54,7 +54,14 @@ for n_containers in ${CONTAINER_COUNTS}; do
 	docker-compose -f $COMPOSE_FILE up -d --scale ping=$n_containers
 	docker run -itd --name=$PING_CONTAINER_NAME \
 		--net=$NETWORK --entrypoint=/bin/bash \
+		--cpuset-cpus=$CPU_LIST \
 		$PING_CONTAINER_IMAGE
+
+	$PAUSE_CMD
+
+	$DOCKERCPUSET_CMD
+	
+	echo "  assigned CPUs"
 
 	$PAUSE_CMD
 

@@ -14,6 +14,10 @@ export CONTAINER_COUNTS="10"
 export DATE_TAG=`date +%Y%m%d%H%M%S`
 # export CONTAINER_COUNTS="`seq 0 1 100`"
 
+export CPU_LIST="0-15"
+
+export DOCKERCPUSET_CMD="$(pwd)/dockercpuset.sh"
+
 ./cn_run.sh
 
 ./ch_run.sh

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 export B="----------------"
-export C="****************"
+export C="-+-+-+-+-+-+-+-+"
 
-export PING_ARGS="-D -i 0.0 -s 56 -c 2000"
+export PING_ARGS="-D -i 1.0 -s 56 -c 30"
 #export PING_ARGS="-D -i 0.0 -s 56 -c 100"
 
 # Arguments handed to ping in background containers
@@ -16,10 +16,15 @@ export CONTAINER_COUNTS="10"
 
 export DATE_STR=`date +%Y%m%d%H%M%S`
 
+export DOCKERCPUSET_CMD="$(pwd)/dockercpuset.sh"
+
 mkdir $DATE_STR
 cd $DATE_STR
 
-for i in {0..3}; do
+for i in {0..0}; do
+
+	echo "$C Running on $i CPUS $C"
+	export CPU_LIST="0-$i"
 
 	export DATE_TAG="${DATE_STR}_$i"
 
@@ -27,12 +32,12 @@ for i in {0..3}; do
 	echo ${DATE_TAG}_CH >> manifest
 	echo ${DATE_TAG}_CN >> manifest
 
-	echo $C Container - Network $C
-	taskset --cpu-list 0-$i ../cn_run.sh
+	echo "$C Container - Network $C"
+	../cn_run.sh
 
-	echo $C Container - Host $C
-	taskset --cpu-list 0-$i ../ch_run.sh
+	echo "$C Container - Host $C"
+	../ch_run.sh
 
-	echo $C Container - Container $C
-	taskset --cpu-list 0-$i ../cc_run.sh
+	echo "$C Container - Container $C"
+	../cc_run.sh
 done

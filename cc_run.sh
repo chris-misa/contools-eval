@@ -31,6 +31,7 @@ echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
 # Start target container
 docker run -itd --net=$NETWORK \
 	--name=$TARGET_CONTAINER_NAME \
+	--cpuset-cpus=$CPU_LIST \
 	ubuntu /bin/bash
 TARGET_IPV4=`docker inspect $TARGET_CONTAINER_NAME -f "{{.NetworkSettings.Networks.${NETWORK}.IPAddress}}"`
 
@@ -62,10 +63,16 @@ for n_containers in ${CONTAINER_COUNTS}; do
 	docker-compose -f $COMPOSE_FILE up -d --scale ping=$n_containers
 	docker run -itd --name=$PING_CONTAINER_NAME \
 		--net=$NETWORK --entrypoint=/bin/bash \
+		--cpuset-cpus=$CPU_LIST \
 		$PING_CONTAINER_IMAGE
 
 	$PAUSE_CMD
 
+	$DOCKERCPUSET_CMD
+	
+	echo "  assigned CPUs"
+
+	$PAUSE_CMD
 
 	echo "${n_containers}containers_${TARGET_IPV4}.ping" >> $MANIFEST
 	echo "  pinging. . . "
