@@ -88,16 +88,27 @@ Running all three topos with 0 to 100 containers, -i 0 on all, 2K packets,
 linux bridge, etc.
 
 
+20190111020551:
+Running 0 to 20 containers timming sys_sendto, all -i 0 linux bridge.
+(on xl... nodes)
+
+20190111105726:
+Re-running sys_sendto timing code on m510 nodes, 0 to 100, linux bridge, -i 0
+
+20190111144919:
+Re-running previous experiment to check on odd dip around 30 containers. . .
+
+cpu1:
+Prelim test of cpus param for dev of script.
 
 Current: (utah)
-'threetoporedo' 
-
+Ten bg containers, all -i 0, testing over different number of CPUs
 
 
 Future Ideas:
 
-1 to 10 containers all pinging.
 Syscall time in different contexts>
+
 
 Topologies.
 
@@ -106,8 +117,13 @@ Same machine.
   
 Instructions per packet?
 
-Topos:
+Topos (codes)
 (Background traffic always from containers to third-host on LAN.)
-C-N: Container to network: Container to second-host on LAN
-C-C: Container to container.
-C-H: Container to container's hosting node.
+CN: Container to network: Container to second-host on LAN
+CC: Container to container.
+CH: Container to container's hosting node.
+ST: sendto time
+
+
+NODES MIGHT BE RUNNING OUT OF MEMORY WITH TOO MANY CONTAINERS> > > >
+Each container get a mount point and this saturates something?
