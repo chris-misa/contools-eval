@@ -11,11 +11,17 @@ export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
 export NETWORK="bridge"
 
 export CONTAINER_COUNTS="10"
-export DATE_TAG=`date +%Y%m%d%H%M%S`
 # export CONTAINER_COUNTS="`seq 0 1 100`"
 
-./cn_run.sh
+export DATE_STR=`date +%Y%m%d%H%M%S`
 
-./ch_run.sh
+for i in {0..3}; do
 
-./cc_run.sh
+	export DATE_TAG="${DATE_STR}_$i"
+
+	./cn_run.sh
+
+	./ch_run.sh
+
+	./cc_run.sh
+done

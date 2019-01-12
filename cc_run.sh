@@ -16,7 +16,6 @@ COMPOSE_FILE="${HOME}/contools-eval/ping_compose/docker-compose.yml"
 
 PAUSE_CMD="sleep 5"
 
-DATE_TAG=`date +%Y%m%d%H%M%S`
 META_DATA="Metadata"
 MANIFEST="manifest"
 

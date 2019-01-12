@@ -16,7 +16,7 @@ TRACE_CMD_CMD="sleep 0.1"
 
 
 CONTAINER_COUNTS=(
-`seq 0 1 20`
+`seq 0 1 100`
 #   1
 #   2
 #   3
