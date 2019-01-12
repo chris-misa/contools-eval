@@ -21,7 +21,7 @@ export DOCKERCPUSET_CMD="$(pwd)/dockercpuset.sh"
 mkdir $DATE_STR
 cd $DATE_STR
 
-for i in {0..0}; do
+for i in {0..3}; do
 
 	echo "$C Running on $i CPUS $C"
 	export CPU_LIST="0-$i"
