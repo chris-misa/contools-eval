@@ -50,28 +50,28 @@ sudo chmod +x /usr/local/bin/docker-compose
 systemctl disable apparmor.service --now
 service apparmor teardown
 
-
-#
-# Grab and build netperf
-#
-apt-get install -y texinfo
-git clone https://github.com/HewlettPackard/netperf.git
-pushd netperf
-./autogen.sh && ./configure \
-	&& make && make install \
-	|| echo "Failed to build netperf"
-popd
-
-
-#
-# Spin up the OVS bridge
-#
-modprobe openvswitch
-pushd ovsplug
-docker-compose up -d
-popd
-
-#
-# Make a new docker network on ovs
-#
-docker network create -d ovs ovsnet
+#   
+#   #
+#   # Grab and build netperf
+#   #
+#   apt-get install -y texinfo
+#   git clone https://github.com/HewlettPackard/netperf.git
+#   pushd netperf
+#   ./autogen.sh && ./configure \
+#   	&& make && make install \
+#   	|| echo "Failed to build netperf"
+#   popd
+#   
+#   
+#   #
+#   # Spin up the OVS bridge
+#   #
+#   modprobe openvswitch
+#   pushd ovsplug
+#   docker-compose up -d
+#   popd
+#   
+#   #
+#   # Make a new docker network on ovs
+#   #
+#   docker network create -d ovs ovsnet
