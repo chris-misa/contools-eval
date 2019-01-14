@@ -50,7 +50,6 @@ sudo chmod +x /usr/local/bin/docker-compose
 systemctl disable apparmor.service --now
 service apparmor teardown
 
-
 #
 # Grab and build netperf
 #
