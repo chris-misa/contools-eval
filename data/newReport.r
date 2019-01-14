@@ -8,7 +8,8 @@ data_path <- args[1]
 
 #n_cpus <- c(0, 1, 3, 7, 15)
 n_cpus <- c(15,15)
-n_containers <- seq(0, 100, 10)
+n_containers <- seq(0, 100, 1)
+container_labels <- seq(0, 100, 10)
 x_label_at <- seq(0, 100, 10)
 
 #
@@ -136,7 +137,7 @@ while (T) {
 
 
   # Add x-axis
-  axis(1, at=x_label_at, labels=n_containers, las=2)
+  axis(1, at=x_label_at, labels=container_labels, las=2)
 
   dev.off()
 
@@ -155,7 +156,7 @@ while (T) {
 
 
   # Add x-axis
-  axis(1, at=x_label_at, labels=n_containers, las=2)
+  axis(1, at=x_label_at, labels=container_labels, las=2)
 
   dev.off()
 }
