@@ -3,16 +3,18 @@
 export B="----------------"
 export C="-+-+-+-+-+-+-+-+"
 
-export PING_ARGS="-D -i 0.0 -s 56 -c 2000"
-#export PING_ARGS="-D -i 0.0 -s 56 -c 100"
+#export PING_ARGS="-D -i 0.0 -s 56 -c 2000"
+export PING_ARGS="-D -i 0.0 -s 56 -c 1000"
 
 # Arguments handed to ping in background containers
 export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
 
 export NETWORK="bridge"
 
-export CONTAINER_COUNTS="10"
+export CONTAINER_COUNTS="`seq 0 5 100`"
 # export CONTAINER_COUNTS="`seq 0 1 100`"
+
+export CPU_COUNTS=({0..2})
 
 export DATE_STR=`date +%Y%m%d%H%M%S`
 
@@ -21,7 +23,7 @@ export DOCKERCPUSET_CMD="$(pwd)/dockercpuset.sh"
 mkdir $DATE_STR
 cd $DATE_STR
 
-for i in {0..15}; do
+for i in ${CPU_COUNTS[@]}; do
 
 	echo "$C Running on $i CPUS $C"
 	export CPU_LIST="0-$i"
