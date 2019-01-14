@@ -119,10 +119,15 @@ running 0 100 containers recvmsg timer.
 20190114022918:
 Developing fixed sense of what native should be doing (all on 16 CPUs only)
 
-Current: (utah)
-'cpuContainers' Running fixed original 0 to 100 traffic containers on 1 - 16 CPUs
+20190114031153:
+First run with fixed native samples and 0 to 100 containers by 1 (all 16 CPUs)
 
-'backToCPU' Running reduced density container counts with cpu variation.
+20190114034630:
+0-100 by 10 containers over powers of two CPUs. ..
+
+Current: (utah)
+
+'backToCPU' Re-Running reduced density container counts with cpu variation.
 
 
 
