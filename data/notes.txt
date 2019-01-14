@@ -98,11 +98,27 @@ Re-running sys_sendto timing code on m510 nodes, 0 to 100, linux bridge, -i 0
 20190111144919:
 Re-running previous experiment to check on odd dip around 30 containers. . .
 
-cpu1:
-Prelim test of cpus param for dev of script.
+20190112110438:
+20190112122253: (Redoing same code)
+Ten bg containers, all -i 0, testing over different number of CPUs (1 - 16)
+
+20190113110512: (by 5)
+20190113120203: (by 1)
+running 0 to 10 containers, 1 - 3 CPUs (for quicker results)
+
+20190113135216:
+running 0 to 100 by 10 containers, 1 - 3 CPUs (for quicker results)
+
 
 Current: (utah)
-Ten bg containers, all -i 0, testing over different number of CPUs
+'cpuContainers' Running original 0 to 100 traffic containers on 1 - 16 CPUs (cross prod)
+
+'redoBy10' re-running 0 to 100 by 5 containers, 1 - 3 CPUs (for quicker results)
+
+
+
+
+
 
 
 Future Ideas:

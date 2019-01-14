@@ -8,7 +8,7 @@ if (length(args) != 1) {
 data_path <- args[1]
 target <- "10.10.1.2"
 
-n_cpus <- c(seq(0, 3, 1))
+n_cpus <- c(seq(0, 15, 1))
 n_containers <- 10
 
 
@@ -59,10 +59,8 @@ while (T) {
   # Search lower level manifests for the number of containers
   con2 <- file(paste(data_path, "/", line, "/manifest", sep=""), "r")
   linePattern <- paste(n_containers, "containers_.*", sep="")
-  cat("Line pattern:", linePattern, "\n")
   while (T) {
     line2 <- readLines(con2, n=1)
-    cat("Read:", line2, "\n")
     if (length(line2) == 0) {
       stop(paste("Ran out of lines in manifest for", line))
     }
@@ -84,7 +82,8 @@ while (T) {
 }
 close(con)
 
-ybnds <- c(0, max(means + sds))
+ybnds <- c(0, max(means))
+#ybnds <- c(0, 200)
 
 #
 # Evaluate ecdfs into matrix for heatmap
@@ -105,6 +104,10 @@ image(seq(0,length(means)-1), seq(ybnds[[1]],ybnds[[2]],0.1), t(num_ecdfs), ylim
 grid()
 axis(1, at=seq(0, (length(n_cpus) - 1) * 3, 3), labels=n_cpus, las=2)
 
-
 dev.off()
+
+#
+# Draw Means
+#
+
 
