@@ -21,6 +21,8 @@ export DATE_STR=`date +%Y%m%d%H%M%S`
 
 export DOCKERCPUSET_CMD="$(pwd)/dockercpuset.sh"
 
+export RUN_ALL_CMD="$(pwd)/runAllContainerCounts.sh"
+
 mkdir $DATE_STR
 cd $DATE_STR
 
