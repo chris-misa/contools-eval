@@ -11,10 +11,11 @@ export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
 
 export NETWORK="bridge"
 
-export CONTAINER_COUNTS="`seq 0 5 100`"
+export CONTAINER_COUNTS="`seq 0 5 5`"
 # export CONTAINER_COUNTS="`seq 0 1 100`"
 
-export CPU_COUNTS=({0..2})
+#export CPU_COUNTS=({0..2})
+export CPU_COUNTS=(15)
 
 export DATE_STR=`date +%Y%m%d%H%M%S`
 

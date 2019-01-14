@@ -27,47 +27,37 @@ echo "lsb_release -a -> $(lsb_release -a)" >> $META_DATA
 echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
 
 #
-# Native run
-#
-
-echo $B Native control $B
-
-$PAUSE_CMD
-
-# Run ping
-echo "  pinging. . ."
-echo "native_control_${TARGET_IPV4}.ping" >> $MANIFEST
-$NATIVE_PING_CMD $PING_ARGS $TARGET_IPV4 \
-  > native_control_${TARGET_IPV4}.ping
-
-$PAUSE_CMD
-
-#
 # Container pings
 #
 
 for n_containers in ${CONTAINER_COUNTS}; do
 
-	echo $B Container run $B
+	echo $B Running for $n_containers containers $B
 
 	# Start background containers
 	docker-compose -f $COMPOSE_FILE up -d --scale ping=$n_containers
 	docker run -itd --name=$PING_CONTAINER_NAME \
 		--net=$NETWORK --entrypoint=/bin/bash \
-		--cpuset-cpus=$CPU_LIST \
 		$PING_CONTAINER_IMAGE
+	echo "  spun up containers"
 
 	$PAUSE_CMD
 
 	$DOCKERCPUSET_CMD
+	echo "  assigned CPUs"
 	
-	echo "  assigned CPUs"
-	ps -eH -o comm,pid,cpuid > ${n_containers}verify
+	$PAUSE_CMD
 
-	echo "  assigned CPUs"
+	echo $B Native run $B
+
+	echo "${n_containers}native_${TARGET_IPV4}.ping" >> $MANIFEST
+	echo "  pinging. . ."
+	$NATIVE_PING_CMD $PING_ARGS $TARGET_IPV4 \
+	  > ${n_containers}native_${TARGET_IPV4}.ping
 
 	$PAUSE_CMD
 
+	echo $B Container run $B
 
 	echo "${n_containers}containers_${TARGET_IPV4}.ping" >> $MANIFEST
 	echo "  pinging. . . "
@@ -76,6 +66,9 @@ for n_containers in ${CONTAINER_COUNTS}; do
 	  > ${n_containers}containers_${TARGET_IPV4}.ping
 
 	$PAUSE_CMD
+
+	# Take verification of cpu assignments
+	ps -eH -o comm,pid,cpuid > ${n_containers}verify
 
 	# Stop the containers
 	docker stop ${PING_CONTAINER_NAME} > /dev/null
