@@ -113,24 +113,17 @@ running 0 to 100 by 10 containers, 1 - 3 CPUs (for quicker results)
 Current: (utah)
 'cpuContainers' Running original 0 to 100 traffic containers on 1 - 16 CPUs (cross prod)
 
-'redoBy10' re-running 0 to 100 by 5 containers, 1 - 3 CPUs (for quicker results)
+'traceTesting' running 0 100 containers recvmsg timer.
+
+'redoBy10' Re-running original 0 to 100 experiment with all CPU.
 
 
 
 
+Need to take native RTT at each traffic loading -> isolate container system
+from normal network stack latency.
 
 
-
-Future Ideas:
-
-Syscall time in different contexts>
-
-
-Topologies.
-
-Same machine.
-  Same Bridge.
-  
 Instructions per packet?
 
 Topos (codes)
@@ -139,6 +132,7 @@ CN: Container to network: Container to second-host on LAN
 CC: Container to container.
 CH: Container to container's hosting node.
 ST: sendto time
+RT: recvmsg time
 
 
 NODES MIGHT BE RUNNING OUT OF MEMORY WITH TOO MANY CONTAINERS> > > >

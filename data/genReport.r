@@ -12,9 +12,18 @@ target <- "10.10.1.2"
 #n_containers <- c(0, 1, 2, 3, 5, 7, 11, 17, 25, 38, 57, 86, 129, 291, 437, 656, 985)
 
 # n_containers <- c("native", seq(from=0, to=500, by=10))
-n_containers <- c(seq(0, 100, 10))
-x_label_at <- c(seq(0, 100, 10))
+n_containers <- c(seq(0, 100, 5))
+x_label_at <- c(seq(0, 20, 1))
 # n_containers <- c("Native", "Local", "Same", "Different")
+
+
+#
+# Computes the max of distribution
+#
+mode <- function(data) {
+  df <- hist(data, plot=F, breaks=1000)
+  df$mids[which.max(df$counts)]
+}
 
 #
 # Read and parse a dump from ping
@@ -55,6 +64,7 @@ drawArrowsCenters <- function(ys, belows, aboves, color, centers) {
 #
 
 means <- c()
+modes <- c()
 sds <- c()
 mins <- c()
 maxs <- c()
@@ -71,10 +81,10 @@ while (T) {
   pings <- readPingFile(paste(data_path, "/", line, sep=""))
 
   cat("File:", line, "\n")
-  cat("  mean:", mean(pings$rtt), "(us)\n")
 
   if (length(pings$rtt) != 0) {
     means <- c(means, mean(pings$rtt))
+    modes <- c(modes, mode(pings$rtt))
     sds <- c(sds, sd(pings$rtt))
     mins <- c(mins, min(pings$rtt))
     maxs <- c(maxs, max(pings$rtt))
@@ -94,7 +104,6 @@ while (T) {
 close(con)
 
 ybnds <- c(0, max(means))
-#ybnds <- c(0, 150)
 xbnds <- c(0, length(means) - 1)
 
 #
@@ -110,19 +119,10 @@ for (new_ecdf in ecdfs) {
 #
 pdf(file=paste(data_path, "/means.pdf", sep=""), width=6.5, height=5)
 
-# image(seq(0,30), seq(0,500,0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
-
-
 par(mar=c(5, 5, 1, 3))
 plot(0, type="n", ylim=ybnds, xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Mean RTT (",mu,"s)", sep="")), main="")
 
 grid()
-
-# Native Min
-# abline(mins[[1]], 0, col="gray")
-
-# Plot Mins
-# lines(seq(0,length(mins)-2), mins[-1], type="p", ylim=ybnds, col="gray", pch=20)
 
 # Native Mean
 abline(means[[1]], 0, col="black", lty=2)
@@ -138,12 +138,37 @@ axis(1, at=x_label_at, labels=n_containers, las=2)
 dev.off()
 
 #
+# Draw modes line-graph
+#
+pdf(file=paste(data_path, "/modes.pdf", sep=""), width=6.5, height=5)
+
+par(mar=c(5, 5, 1, 3))
+plot(0, type="n", ylim=ybnds, xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("RTT mode (",mu,"s)", sep="")), main="")
+
+grid()
+
+# Native Mode
+abline(modes[[1]], 0, col="black", lty=2)
+mtext(" Native", 4, at=modes[[1]], las=2)
+
+# Plot Modes
+lines(seq(0,length(modes)-2), modes[-1], type="p", ylim=ybnds, col="black", pch=20)
+
+
+# Add x-axis
+axis(1, at=x_label_at, labels=n_containers, las=2)
+
+dev.off()
+
+
+
+#
 # Draw heatmap
 #
 pdf(file=paste(data_path, "/cdf_map.pdf", sep=""), width=6.5, height=5)
 
 # image(seq(0,length(means)-1), seq(ybnds[[1]],ybnds[[2]],0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
-image(seq(0,length(means)-1), seq(ybnds[[1]],ybnds[[2]],0.1), t(num_ecdfs), ylim=ybnds, xaxt="n", xlab="Number of extra containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
+image(seq(0,length(means)-1), seq(ybnds[[1]],ybnds[[2]],0.1), t(num_ecdfs), ylim=c(0,500), xaxt="n", xlab="Number of extra containers", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="")
 
 grid()
 axis(1, at=seq(0, length(n_containers) - 1), labels=n_containers, las=2)

@@ -8,8 +8,8 @@ if (length(args) != 1) {
 data_path <- args[1]
 target <- "10.10.1.2"
 
-n_cpus <- seq(0, 2, 1)
-n_containers <- seq(0, 100, 10)
+n_cpus <- seq(0, 4, 1)
+n_containers <- seq(0, 100, 1)
 
 
 #
