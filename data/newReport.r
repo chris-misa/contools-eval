@@ -6,9 +6,9 @@ if (length(args) != 1) {
 
 data_path <- args[1]
 
-n_cpus <- seq(15, 15)
-n_containers <- seq(0, 5, 5)
-x_label_at <- seq(0, 1)
+n_cpus <- seq(0, 0)
+n_containers <- seq(0, 100, 20)
+x_label_at <- seq(0, 5)
 
 #
 # Read and parse a dump from ping
@@ -132,6 +132,25 @@ while (T) {
 
   # Container Means
   lines(seq(0, length(containerMeans)-1), containerMeans, type="p", pch=20, col="black")
+
+
+  # Add x-axis
+  axis(1, at=x_label_at, labels=n_containers, las=2)
+
+  dev.off()
+
+  #
+  # Draw difference
+  #
+  pdf(file=paste(data_path, "/", line, "/mean_diffs.pdf", sep=""), width=6.5, height=5)
+
+  par(mar=c(5, 5, 1, 3))
+  plot(0, type="n", ylim=c(0, max(containerMeans - nativeMeans)), xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Latency Overhead (",mu,"s)", sep="")), main="")
+
+  grid()
+
+  # Container Means
+  lines(seq(0, length(containerMeans)-1), containerMeans - nativeMeans, type="p", pch=20, col="black")
 
 
   # Add x-axis

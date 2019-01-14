@@ -11,8 +11,8 @@ target <- "10.10.1.2"
 #n_containers <- c(0, 1, 2, 3, 5, 7, 11, 17, 25, 38, 57, 86, 129, 291, 437, 656, 985)
 
 # n_containers <- c("native", seq(from=0, to=500, by=10))
-n_containers <- seq(0, 10, 1)
-x_label_at <- seq(0,10,1)
+n_containers <- seq(0, 100, 10)
+x_label_at <- seq(0,100,10)
 # n_containers <- c("Native", "Local", "Same", "Different")
 
 
