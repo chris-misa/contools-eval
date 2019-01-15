@@ -141,10 +141,12 @@ Running same 0 to 100 experiment on half the cpus (8).
 20190115114120:
 Running 0 to 100 by 4 with 4 CPUs per container (all 16 used)
 
+20190115132124:
+Running 0 to 100 by 4 with 2 CPUs per container (all 16 used)
+
 Current: (utah)
 
 'redo4' Running 0 to 100 by 1 with 4 CPUs per container (all 16 used)
-'redo5' Running 0 to 100 by 4 with 2 CPUs per container (all 16 used)
 
 Need to take native RTT at each traffic loading -> isolate container system
 from normal network stack latency.
