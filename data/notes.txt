@@ -131,11 +131,20 @@ First run with fixed native samples and 0 to 100 containers by 1 (all 16 CPUs)
 Merged in 20190114235200:
 running 0 to 100, 16 cpu with container pinning, docker brigde, all normal.
 
+
+20190115011833:
+20190115011955:
+20190115012115:
+Merged in 20190115093300:
+Running same 0 to 100 experiment on half the cpus (8).
+
+20190115114120:
+Running 0 to 100 by 4 with 4 CPUs per container (all 16 used)
+
 Current: (utah)
 
-'redo4' Running same 0 to 100 experiment on half the cpus.
-'redo3' Running same 0 to 100 experiment on half the cpus.
-'redo2' Running same 0 to 100 experiment on half the cpus.
+'redo4' Running 0 to 100 by 1 with 4 CPUs per container (all 16 used)
+'redo5' Running 0 to 100 by 4 with 2 CPUs per container (all 16 used)
 
 Need to take native RTT at each traffic loading -> isolate container system
 from normal network stack latency.
