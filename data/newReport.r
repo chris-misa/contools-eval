@@ -7,7 +7,7 @@ if (length(args) != 1) {
 data_path <- args[1]
 
 #n_cpus <- c(0, 1, 3, 7, 15)
-n_cpus <- c(16)
+n_cpus <- c(8)
 
 n_containers <- seq(0, 100, 1)
 container_labels <- seq(0, 100, 10)
