@@ -1,0 +1,7 @@
+            ping-12471 [011] 42055.927331108: sys_enter_sendto:     fd: 0x00000003, buff: 0x55fa0a9776c0, len: 0x00000040, flags: 0x00000000, addr: 0x55fa0a974500, addr_len: 0x00000010
+            ping-12471 [011] 42055.927341306: net_dev_queue:        dev=eno1d1 skbaddr=0xffff989047590700 len=98
+            ping-12471 [011] 42055.927342278: net_dev_start_xmit:   dev=eno1d1 queue_mapping=11 skbaddr=0xffff989047590700 vlan_tagged=0 vlan_proto=0x0000 vlan_tci=0x0000 protocol=0x0800 ip_summed=0 len=98 data_len=0 network_offset=14 transport_offset_valid=1 transport_offset=34 tx_flags=0 gso_size=0 gso_segs=0 gso_type=0
+            ping-12471 [011] 42055.927343096: net_dev_xmit:         dev=eno1d1 skbaddr=0xffff989047590700 len=98 rc=0
+            ping-12471 [011] 42055.927345251: sys_exit_sendto:      0x40
+            ping-12471 [011] 42055.927346528: sys_enter_recvmsg:    fd: 0x00000003, msg: 0x7ffd61c92660, flags: 0x00000000
+            ping-12471 [011] 42055.927365472: sys_exit_recvmsg:     0x54
