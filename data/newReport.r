@@ -7,10 +7,14 @@ if (length(args) != 1) {
 data_path <- args[1]
 
 #n_cpus <- c(0, 1, 3, 7, 15)
-n_cpus <- c(15)
+n_cpus <- c(8)
+
 n_containers <- seq(0, 100, 1)
 container_labels <- seq(0, 100, 10)
 x_label_at <- seq(0, 100, 10)
+#n_containers <- seq(0, 96, 16)
+#container_labels <- seq(0, 96, 16)
+#x_label_at <- seq(0, 6, 1)
 
 #
 # Read and parse a dump from ping
@@ -87,11 +91,11 @@ while (T) {
       nativeSds <- c(nativeSds, newSd)
 
       # Sort based on topology
-      if (length(grep(".+_CC", line)) != 0) {
+      if (length(grep(".*CC", line)) != 0) {
         ccNativeMeans <- c(ccNativeMeans, newMean)
-      } else if (length(grep(".+_CH", line)) != 0) {
+      } else if (length(grep(".*CH", line)) != 0) {
         chNativeMeans <- c(chNativeMeans, newMean)
-      } else if (length(grep(".+_CN", line)) != 0) {
+      } else if (length(grep(".*CN", line)) != 0) {
         cnNativeMeans <- c(cnNativeMeans, newMean)
       }
 
@@ -100,11 +104,11 @@ while (T) {
       containerSds <- c(containerSds, newSd)
 
       # Sort based on topology
-      if (length(grep(".+_CC", line)) != 0) {
+      if (length(grep(".*CC", line)) != 0) {
         ccContainerMeans <- c(ccContainerMeans, newMean)
-      } else if (length(grep(".+_CH", line)) != 0) {
+      } else if (length(grep(".*CH", line)) != 0) {
         chContainerMeans <- c(chContainerMeans, newMean)
-      } else if (length(grep(".+_CN", line)) != 0) {
+      } else if (length(grep(".*CN", line)) != 0) {
         cnContainerMeans <- c(cnContainerMeans, newMean)
       }
 
@@ -118,12 +122,9 @@ while (T) {
   #
   # Draw lines for this CPU setting
   #
-
   ybnds <- c(0, max(containerMeans))
   xbnds <- c(0, length(containerMeans) - 1)
-
   pdf(file=paste(data_path, "/", line, "/means.pdf", sep=""), width=6.5, height=5)
-
   par(mar=c(5, 5, 1, 3))
   plot(0, type="n", ylim=ybnds, xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Mean RTT (",mu,"s)", sep="")), main="")
 
@@ -131,15 +132,19 @@ while (T) {
 
   # Native Mean
   lines(seq(0, length(nativeMeans)-1), nativeMeans, type="p", pch=20, col="gray")
-
   # Container Means
-  lines(seq(0, length(containerMeans)-1), containerMeans, type="p", pch=20, col="black")
 
+  lines(seq(0, length(containerMeans)-1), containerMeans, type="p", pch=20, col="black")
 
   # Add x-axis
   axis(1, at=x_label_at, labels=container_labels, las=2)
 
+  # Add legend
+  legend("bottomright", legend=c("container", "native"), col=c("black", "gray"),
+    pch=c(20,20), cex=0.8, bg="white")
+
   dev.off()
+
 
   #
   # Draw difference
@@ -179,43 +184,45 @@ print(chNativeMeansMat)
 ccNativeMeansMat <- matrix(ccNativeMeans, ncol=length(n_containers), byrow=T)
 print(ccNativeMeansMat)
 
-#
-# Draw heatmaps for Containers
-#
-pdf(file=paste(data_path, "/cnContainerRTTMap.pdf", sep=""), width=10, height=5)
-# Omit the first column (which is the native base line means)
-cnDrawMat <- 1 - (cnContainerMeansMat / max(cnContainerMeans))
-image(n_containers, n_cpus, t(cnDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
-dev.off()
 
-pdf(file=paste(data_path, "/chContainerRTTMap.pdf", sep=""), width=10, height=5)
-# Omit the first column (which is the native base line means)
-chDrawMat <- 1 - (chContainerMeansMat / max(chContainerMeans))
-image(n_containers, n_cpus, t(chDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
-dev.off()
-
-pdf(file=paste(data_path, "/ccContainerRTTMap.pdf", sep=""), width=10, height=5)
-# Omit the first column (which is the native base line means)
-ccDrawMat <- 1 - (ccContainerMeansMat / max(ccContainerMeans))
-image(n_containers, n_cpus, t(ccDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
-dev.off()
-#
-# Draw heatmaps for Native
-#
-pdf(file=paste(data_path, "/cnNativeRTTMap.pdf", sep=""), width=10, height=5)
-# Omit the first column (which is the native base line means)
-cnDrawMat <- 1 - (cnNativeMeansMat / max(cnNativeMeans))
-image(n_containers, n_cpus, t(cnDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
-dev.off()
-
-pdf(file=paste(data_path, "/chNativeRTTMap.pdf", sep=""), width=10, height=5)
-# Omit the first column (which is the native base line means)
-chDrawMat <- 1 - (chNativeMeansMat / max(chNativeMeans))
-image(n_containers, n_cpus, t(chDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
-dev.off()
-
-pdf(file=paste(data_path, "/ccNativeRTTMap.pdf", sep=""), width=10, height=5)
-# Omit the first column (which is the native base line means)
-ccDrawMat <- 1 - (ccNativeMeansMat / max(ccNativeMeans))
-image(n_containers, n_cpus, t(ccDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
-dev.off()
+# 
+# #
+# # Draw heatmaps for Containers
+# #
+# pdf(file=paste(data_path, "/cnContainerRTTMap.pdf", sep=""), width=10, height=5)
+# # Omit the first column (which is the native base line means)
+# cnDrawMat <- 1 - (cnContainerMeansMat / max(cnContainerMeans))
+# image(n_containers, n_cpus, t(cnDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
+# dev.off()
+# 
+# pdf(file=paste(data_path, "/chContainerRTTMap.pdf", sep=""), width=10, height=5)
+# # Omit the first column (which is the native base line means)
+# chDrawMat <- 1 - (chContainerMeansMat / max(chContainerMeans))
+# image(n_containers, n_cpus, t(chDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
+# dev.off()
+# 
+# pdf(file=paste(data_path, "/ccContainerRTTMap.pdf", sep=""), width=10, height=5)
+# # Omit the first column (which is the native base line means)
+# ccDrawMat <- 1 - (ccContainerMeansMat / max(ccContainerMeans))
+# image(n_containers, n_cpus, t(ccDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
+# dev.off()
+# #
+# # Draw heatmaps for Native
+# #
+# pdf(file=paste(data_path, "/cnNativeRTTMap.pdf", sep=""), width=10, height=5)
+# # Omit the first column (which is the native base line means)
+# cnDrawMat <- 1 - (cnNativeMeansMat / max(cnNativeMeans))
+# image(n_containers, n_cpus, t(cnDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
+# dev.off()
+# 
+# pdf(file=paste(data_path, "/chNativeRTTMap.pdf", sep=""), width=10, height=5)
+# # Omit the first column (which is the native base line means)
+# chDrawMat <- 1 - (chNativeMeansMat / max(chNativeMeans))
+# image(n_containers, n_cpus, t(chDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
+# dev.off()
+# 
+# pdf(file=paste(data_path, "/ccNativeRTTMap.pdf", sep=""), width=10, height=5)
+# # Omit the first column (which is the native base line means)
+# ccDrawMat <- 1 - (ccNativeMeansMat / max(ccNativeMeans))
+# image(n_containers, n_cpus, t(ccDrawMat), xlab="Number of Containers", ylab="Number of CPUs", main="")
+# dev.off()

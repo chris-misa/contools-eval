@@ -125,12 +125,17 @@ First run with fixed native samples and 0 to 100 containers by 1 (all 16 CPUs)
 20190114034630:
 0-100 by 10 containers over powers of two CPUs. ..
 
+20190114184333:
+20190114190440:
+20190114190614:
+Merged in 20190114235200:
+running 0 to 100, 16 cpu with container pinning, docker brigde, all normal.
+
 Current: (utah)
 
-'backToCPU' Re-Running reduced density container counts with cpu variation.
-
-
-
+'redo4' Running same 0 to 100 experiment on half the cpus.
+'redo3' Running same 0 to 100 experiment on half the cpus.
+'redo2' Running same 0 to 100 experiment on half the cpus.
 
 Need to take native RTT at each traffic loading -> isolate container system
 from normal network stack latency.
