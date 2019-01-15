@@ -74,3 +74,10 @@ service apparmor teardown
 # Make a new docker network on ovs
 #
 # docker network create -d ovs ovsnet
+
+
+#
+# Mount and setup cpuset fs
+#
+mkdir -p /dev/cpuset
+mount -t cpuset cpuset /dev/cpuset

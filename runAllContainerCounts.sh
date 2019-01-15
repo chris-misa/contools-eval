@@ -8,6 +8,7 @@ for n_containers in ${CONTAINER_COUNTS}; do
 	docker-compose -f $COMPOSE_FILE up -d --scale ping=$n_containers
 	docker run -itd --name=$PING_CONTAINER_NAME \
 		--net=$NETWORK --entrypoint=/bin/bash \
+		--cpuset-cpus=$MEASURE_CPU \
 		$PING_CONTAINER_IMAGE
 	echo "  spun up containers"
 
