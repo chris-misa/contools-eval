@@ -1,4 +1,4 @@
-containerNames <- seq(1,10,1)
+containerNames <- seq(1,16,1)
 
 args <- commandArgs(trailingOnly=T)
 usage <- "rscript genreport.r <path to data folder>"
@@ -286,7 +286,7 @@ print(recvData)
 
 
 pdf(file=paste(data_path, "/sendMeans.pdf", sep=""), width=6.5, height=5)
-barplot(sendData, beside=T,
+barplot(sendData, beside=F,
     ylab=expression(paste("Time (",mu,"s)", sep="")),
     xlab="Number of containers",
     names.arg=containerNames,
@@ -297,7 +297,7 @@ dev.off()
 
 
 pdf(file=paste(data_path, "/recvMeans.pdf", sep=""), width=6.5, height=5)
-barplot(recvData, beside=T,
+barplot(recvData, beside=F,
     ylab=expression(paste("Time (",mu,"s)", sep="")),
     xlab="Number of containers",
     names.arg=containerNames,
