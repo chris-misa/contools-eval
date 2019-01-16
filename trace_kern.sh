@@ -13,12 +13,12 @@ export NETWORK="bridge"
 export MAX_CPU=16
 
 TRACE_CMD_ARGS="-e syscalls:sys_enter_sendto -e net:net_dev_queue -e net:netif_receive_skb -e net:napi_gro_frags_entry -e net:net_dev_start_xmit -e syscalls:sys_exit_recvmsg"
-TRACE_CMD_CMD="sleep 0.1"
+TRACE_CMD_CMD="sleep 0.02"
 
 
 CONTAINER_COUNTS=(
 # `seq 0 1 100`
-0
+10
 #   1
 #   2
 #   3
@@ -71,38 +71,6 @@ echo "lsb_release -a -> $(lsb_release -a)" >> $META_DATA
 echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
 
 #
-# Native run
-#
-
-echo $B Native control $B
-# Run ping in background
-$NATIVE_PING_CMD $PING_ARGS $TARGET_IPV4 \
-	> /dev/null &
-#  > native_control_${TARGET_IPV4}.ping &
-echo "  pinging. . ."
-
-$PAUSE_CMD
-
-PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
-echo "  got ping pid: $PING_PID"
-
-$PAUSE_CMD
-trace-cmd record $TRACE_CMD_ARGS $TRACE_CMD_CMD
-echo "  traced"
-
-$PAUSE_CMD
-
-kill -INT $PING_PID
-echo "  killed ping"
-
-trace-cmd report -t > native_control_${TARGET_IPV4}.trace
-echo "native_control_${TARGET_IPV4}.trace" >> $MANIFEST
-echo $B Converted trace $B
-
-
-$PAUSE_CMD
-
-#
 # Container pings
 #
 
@@ -112,18 +80,8 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 
 	# Start ping container as service
 	docker-compose -f $COMPOSE_FILE up -d --scale ping=$n_containers
-	docker run -itd --name=$PING_CONTAINER_NAME \
-		--net=$NETWORK --entrypoint=$CONTAINER_PING_CMD \
-		$PING_CONTAINER_IMAGE \
-		$PING_ARGS $TARGET_IPV4 \
-		> /dev/null
 
 	echo "  pinging. . . "
-
-	$PAUSE_CMD
-
-	PING_PID=`docker inspect $PING_CONTAINER_NAME -f '{{.State.Pid}}'`
-	echo "  got ping pid: $PING_PID"
 
 	$PAUSE_CMD
 	trace-cmd record $TRACE_CMD_ARGS $TRACE_CMD_CMD
@@ -133,8 +91,6 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 
 	# Stop the containers
 	docker-compose -f $COMPOSE_FILE down
-	docker stop ${PING_CONTAINER_NAME} > /dev/null
-	docker rm ${PING_CONTAINER_NAME} > /dev/null
 	echo $B Stopped $n_containers containers $B
 
 	trace-cmd report -t > ${n_containers}containers_${TARGET_IPV4}.trace

@@ -24,7 +24,6 @@ cur_cpu=0
 for PID in $DOCKER_PIDS; do
 	taskset --cpu-list -p ${cur_cpu}-${cur_cpu} $PID
 	cur_cpu=$(( ($cur_cpu + 1) % $MAX_CPU ))
-	echo "$PID" >> ${1}_traffic.pid
 done
 
 
