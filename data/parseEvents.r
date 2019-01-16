@@ -81,11 +81,42 @@ sendStateMachine <- function(flow) {
 }
 
 recvStateMachine <- function(flow) {
+  state <- 0
+  prevTime <- 0
+
+  sandboxTimes <- c()
+  routingTimes <- c()
+
+  for (line in flow) {
+    f <- parseTraceLine(line)
+    if (state == 0
+        && f[["event"]] == "napi_gro_frags_entry"
+        && f[["dev"]] == HOST_IFACE) {
+      prevTime <- f[["ts"]]
+      state <- 1
+    } else if (state == 1
+        && f[["event"]] == "net_dev_start_xmit"
+        && f[["dev"]] == DOCKER_IFACE) {
+      routingTimes <- c(routingTimes, f[["ts"]] - prevTime)
+      prevTime <- f[["ts"]]
+      state <- 2
+    } else if (state == 2
+       && f[["event"]] == "netif_receive_skb"
+       && f[["dev"]] == SANDBOX_IFACE) {
+      sandboxTimes <- c(sandboxTimes, f[["ts"]] - prevTime)
+      state <- 0
+    }
+  }
+
+  data.frame(sandboxTimes=sandboxTimes, routingTimes=routingTimes)
 }
 
 flows <- readNetTrace(data_path)
 for (f in ls(flows)) {
+  cat("Flow:", f, ": send:\n")
   print(sendStateMachine(flows[[f]]))
+  cat("recv:\n")
+  print(recvStateMachine(flows[[f]]))
 }
 
 dumpFlows(flows)
