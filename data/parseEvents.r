@@ -1,4 +1,4 @@
-containerNames <- c(4)
+containerNames <- seq(5,100,5)
 
 args <- commandArgs(trailingOnly=T)
 usage <- "rscript genreport.r <path to data folder>"
@@ -56,6 +56,7 @@ readNetTrace <- function(filePath) {
   file <- readLines(con, n=-1)
   close(con)
   nlines <- length(file)
+  recvmsgUsed <- rep(F, nlines) # for keeping track of which sys_exit_recvmsg event's we've used so far
   flows <- new.env()
   i <- 1
   while (i <= nlines) {
@@ -81,13 +82,17 @@ readNetTrace <- function(filePath) {
       flows[[k]][[length(flows[[k]])+1]] <- l
 
       # Forwardtrack to get recvmsg
+      #
+      # This stalls because processes may restart on a new CPU!
+      # Idea: look for next unmarked temporal sys_exit_recvmsg, use and mark it
+      #
       if (l[["event"]] == "netif_receive_skb" && l[["dev"]] == SANDBOX_IFACE) {
-        targetCPU <- l[["cpu"]]
         j <- i + 1
         while (j <= nlines) {
           maybeRecv <- getRecvmsg(file[[j]])
-          if (!is.null(maybeRecv) && maybeRecv[["cpu"]] == targetCPU) {
+          if (!recvmsgUsed[[j]] && !is.null(maybeRecv)) {
             flows[[k]][[length(flows[[k]])+1]] <- maybeRecv
+            recvmsgUsed[[j]] <- T
             break
           }
           j <- j + 1
@@ -108,6 +113,19 @@ dumpFlows <- function(flows) {
   }
 }
 
+dumpFlowsToFile <- function(flows, filePath) {
+  con <- file(filePath, "wt")
+  sink(con)
+  for (f in ls(flows)) {
+    cat("New skbaddr: ", f, "\n")
+    for (l in flows[[f]]) {
+      cat(sprintf("%.9f: %s: dev=%s skbaddr=%s\n",l[["ts"]], l[["event"]], l[["dev"]], l[["skbaddr"]]))
+    }
+  }
+  sink()
+  close(con)
+}
+
 sendStateMachine <- function(flow) {
   state <- 0
   prevTime <- 0
@@ -117,8 +135,19 @@ sendStateMachine <- function(flow) {
   routingTimes <- c()
 
   for (f in flow) {
-    if (state == 0
-        && f[["event"]] == "sys_enter_sendto") {
+    # if (state == 0
+    #     && f[["event"]] == "sys_enter_sendto") {
+    if (f[["event"]] == "sys_enter_sendto") {
+    
+      # Handle edge case where trace ends in the middle of a cycle
+      # by removing the last elements
+      if (state >= 2) {
+        syscallTimes <- syscallTimes[-length(syscallTimes)]
+      }
+      if (state == 3) {
+        sandboxTimes <- sandboxTimes[-length(sandboxTimes)]
+      }
+
       prevTime <- f[["ts"]]
       state <- 1
     } else if (state == 1
@@ -162,9 +191,19 @@ recvStateMachine <- function(flow) {
   syscallTimes <- c()
 
   for (f in flow) {
-    if (state == 0
-        && f[["event"]] == "napi_gro_frags_entry"
+    #if (state == 0
+    if (f[["event"]] == "napi_gro_frags_entry"
         && f[["dev"]] == HOST_IFACE) {
+
+      # Handle edge case where trace ends in the middle of a cycle
+      # by removing the last element
+      if (state >= 2) {
+        routingTimes <- routingTimes[-length(routingTimes)]
+      }
+      if (state == 3) {
+        sandboxTimes <- sandboxTimes[-length(sandboxTimes)]
+      }
+
       prevTime <- f[["ts"]]
       state <- 1
     } else if (state == 1
@@ -219,6 +258,8 @@ while (T) {
   recvs <- data.frame()
 
   flows <- readNetTrace(paste(data_path, "/", line, sep=""))
+
+  dumpFlowsToFile(flows, paste(data_path, "flows", line, sep=""))
 
   for (f in ls(flows)) {
     sends <- rbind(sends, sendStateMachine(flows[[f]]))

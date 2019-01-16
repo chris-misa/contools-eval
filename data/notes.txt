@@ -146,10 +146,12 @@ Running 0 to 100 by 4 with 2 CPUs per container (all 16 used)
 
 
 Current: (utah)
+running 0 to 100 by 5, tracing
 
-Need to take native RTT at each traffic loading -> isolate container system
-from normal network stack latency.
-Then, make sense of it?
+
+The analysis script seems to work, but might just be getting lucky:
+freezes on new data. Probably need to debug the state machines. . .
+
 
 
 Instructions per packet?
