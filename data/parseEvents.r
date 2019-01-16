@@ -1,3 +1,5 @@
+containerNames <- c(4)
+
 args <- commandArgs(trailingOnly=T)
 usage <- "rscript genreport.r <path to data folder>"
 if (length(args) != 1) {
@@ -11,7 +13,7 @@ DOCKER_IFACE <- "docker0"
 HOST_IFACE <- "eno1d1"
 
 parseTraceLine <- function(line) {
-  linePattern <- ".+ \\[([0-9]+)\\] ([0-9\\.]+): ([a-z_]+): +dev=([a-z0-9]+) .*skbaddr=([x0-9a-f]+) .*"
+  linePattern <- ".+ \\[([0-9]+)\\] +([0-9\\.]+): +([a-z_]+): +dev=([a-z0-9]+) .*skbaddr=([x0-9a-f]+) .*"
   matches <- grep(linePattern, line, value=T)
   if (length(matches) != 0) {
     cpu <- as.numeric(sub(linePattern, "\\1", matches))
@@ -26,7 +28,7 @@ parseTraceLine <- function(line) {
 }
 
 getSendto <- function(str) {
-  linePattern <- ".+ \\[([0-9]+)\\] ([0-9\\.]+): sys_enter_sendto: .*"
+  linePattern <- ".+ \\[([0-9]+)\\] +([0-9\\.]+): +sys_enter_sendto: .*"
   matches <- grep(linePattern, str, value=T)
   if (length(matches) != 0) {
     cpu <- as.numeric(sub(linePattern, "\\1", matches))
@@ -38,7 +40,7 @@ getSendto <- function(str) {
 }
 
 getRecvmsg <- function(str) {
-  linePattern <- ".+ \\[([0-9]+)\\] ([0-9\\.]+): sys_exit_recvmsg: .*"
+  linePattern <- ".+ \\[([0-9]+)\\] +([0-9\\.]+): +sys_exit_recvmsg: .*"
   matches <- grep(linePattern, str, value=T)
   if (length(matches) != 0) {
     cpu <- as.numeric(sub(linePattern, "\\1", matches))
@@ -201,6 +203,8 @@ recvStateMachine <- function(flow) {
 # Main work starts here
 #
 
+sendData <- matrix(,nrow=3,ncol=0)
+recvData <- matrix(,nrow=3,ncol=0)
 
 con <- file(paste(data_path, "/manifest", sep=""), "r")
 while (T) {
@@ -208,6 +212,8 @@ while (T) {
   if (length(line) == 0) {
     break
   }
+
+  cat("File: ", line, ":\n")
 
   sends <- data.frame()
   recvs <- data.frame()
@@ -226,7 +232,34 @@ while (T) {
   recvSandboxMean <- mean(recvs$sandboxTimes)
   recvRoutingMean <- mean(recvs$routingTimes)
 
+  sendData <- cbind(sendData, c(sendSyscallMean, sendSandboxMean, sendRoutingMean))
+  recvData <- cbind(recvData, c(recvSyscallMean, recvSandboxMean, recvRoutingMean))
+
   cat("Saw ", nrow(sends), " sends and ", nrow(recvs), "recvs\n")
   cat("Send means: syscalls: ", sendSyscallMean, " sandbox: ", sendSandboxMean, " routing: ", sendRoutingMean, "\n")
   cat("Recv means: syscalls: ", recvSyscallMean, " sandbox: ", recvSandboxMean, " routing: ", recvRoutingMean, "\n")
 }
+
+print(sendData)
+print(recvData)
+
+
+pdf(file=paste(data_path, "/sendMeans.pdf", sep=""), width=6.5, height=5)
+barplot(sendData, beside=T,
+    ylab=expression(paste("Time (",mu,"s)", sep="")),
+    xlab="Number of containers",
+    names.arg=containerNames,
+    legend=c("syscall", "sandbox", "routing"),
+    args.legend=list(x="topleft"))
+
+dev.off()
+
+
+pdf(file=paste(data_path, "/recvMeans.pdf", sep=""), width=6.5, height=5)
+barplot(recvData, beside=T,
+    ylab=expression(paste("Time (",mu,"s)", sep="")),
+    xlab="Number of containers",
+    names.arg=containerNames,
+    legend=c("syscall", "sandbox", "routing"),
+    args.legend=list(x="topleft"))
+dev.off()
