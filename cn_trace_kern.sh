@@ -12,14 +12,14 @@ export NETWORK="bridge"
 
 export MAX_CPU=16
 
-TRACE_CMD_ARGS="-e syscalls:sys_enter_sendto -e net:net_dev_queue -e net:netif_receive_skb -e net:napi_gro_frags_entry -e net:net_dev_start_xmit -e syscalls:sys_exit_recvmsg -M 1"
-TRACE_CMD_CMD="sleep 0.1"
+TRACE_CMD_ARGS="-e syscalls:sys_enter_sendto -e net:net_dev_queue -e net:netif_receive_skb -e net:napi_gro_frags_entry -e net:net_dev_start_xmit -e syscalls:sys_exit_recvmsg -M ffff"
+TRACE_CMD_CMD="sleep 0.02"
 
 export DOCKER_CPUSET_CMD="$(pwd)/dockercpuset.sh"
 
 CONTAINER_COUNTS=(
 # `seq 0 1 100`
-4
+1 2 3 4
 )
 
 export CONTAINER_PING_CMD="/iputils/ping"
@@ -55,23 +55,10 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 
 	# Start ping container as service
 	docker-compose -f $COMPOSE_FILE up -d --scale ping=$n_containers
-	docker run -itd --name=$PING_CONTAINER_NAME \
-		--net=$NETWORK --entrypoint=$CONTAINER_PING_CMD \
-		$PING_CONTAINER_IMAGE \
-		$PING_ARGS $TARGET_IPV4 \
-		> /dev/null
 
-	echo "  pinging. . . "
-
-	$DOCKER_CPUSET_CMD $n_containers
+	$DOCKER_CPUSET_CMD
 	$PAUSE_CMD
 
-
-	PING_PID=`docker inspect $PING_CONTAINER_NAME -f '{{.State.Pid}}'`
-	echo "  got ping pid: $PING_PID"
-	echo "$PING_PID" > ${n_containers}containers_ping.pid
-
-	$PAUSE_CMD
 	trace-cmd record $TRACE_CMD_ARGS $TRACE_CMD_CMD
 	echo "  traced"
 
@@ -79,8 +66,6 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 
 	# Stop the containers
 	docker-compose -f $COMPOSE_FILE down
-	docker stop ${PING_CONTAINER_NAME} > /dev/null
-	docker rm ${PING_CONTAINER_NAME} > /dev/null
 	echo $B Stopped $n_containers containers $B
 
 	trace-cmd report -t > ${n_containers}containers_${TARGET_IPV4}.trace

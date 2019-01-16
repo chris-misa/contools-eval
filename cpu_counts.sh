@@ -16,7 +16,6 @@ export CONTAINER_COUNTS="`seq 0 4 100`"
 #export CONTAINER_COUNTS="10"
 
 export CPU_COUNTS=(16)
-export MEASURE_CPU="0-1"
 
 export DATE_STR=`date +%Y%m%d%H%M%S`
 
