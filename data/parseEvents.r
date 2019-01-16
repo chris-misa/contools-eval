@@ -37,6 +37,18 @@ getSendto <- function(str) {
   }
 }
 
+getRecvmsg <- function(str) {
+  linePattern <- ".+ \\[([0-9]+)\\] ([0-9\\.]+): sys_exit_recvmsg: .*"
+  matches <- grep(linePattern, str, value=T)
+  if (length(matches) != 0) {
+    cpu <- as.numeric(sub(linePattern, "\\1", matches))
+    ts <- as.numeric(sub(linePattern, "\\2", matches))
+    list(cpu=cpu, ts=ts, even="sys_exit_recvmsg", dev=NULL, skbaddr=NULL)
+  } else {
+    NULL
+  }
+}
+
 readNetTrace <- function(filePath) {
   con <- file(filePath, "r")
   file <- readLines(con, n=-1)
@@ -50,7 +62,7 @@ readNetTrace <- function(filePath) {
 
       k <- l[["skbaddr"]]
 
-      # Backtrack to got send to
+      # Backtrack to get sendto
       if (l[["event"]] == "net_dev_queue" && l[["dev"]] == SANDBOX_IFACE) {
         targetCPU <- l[["cpu"]]
         j <- i - 1
@@ -63,7 +75,22 @@ readNetTrace <- function(filePath) {
           j <- j - 1
         }
       }
+
       flows[[k]][[length(flows[[k]])+1]] <- l
+
+      # Forwardtrack to get recvmsg
+      if (l[["event"]] == "netif_receive_skb" && l[["dev"]] == SANDBOX_IFACE) {
+        targetCPU <- l[["cpu"]]
+        j <- i + 1
+        while (j <= nlines) {
+          maybeRecv <- getRecvmsg(file[[j]])
+          if (!is.null(maybeRecv) && maybeRecv[["cpu"]] == targetCPU) {
+            flows[[k]][[length(flows[[k]])+1]] <- maybeRecv
+            break
+          }
+          j <- j + 1
+        }
+      }
     }
     i <- i + 1
   }
