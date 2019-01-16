@@ -10,7 +10,6 @@ SANDBOX_IFACE <- "eth0"
 DOCKER_IFACE <- "docker0"
 HOST_IFACE <- "eno1d1"
 
-
 readNetTrace <- function(filePath) {
   con <- file(filePath, "r")
   flows <- new.env()
@@ -111,12 +110,24 @@ recvStateMachine <- function(flow) {
   data.frame(sandboxTimes=sandboxTimes, routingTimes=routingTimes)
 }
 
+sends <- data.frame()
+recvs <- data.frame()
+
 flows <- readNetTrace(data_path)
 for (f in ls(flows)) {
-  cat("Flow:", f, ": send:\n")
-  print(sendStateMachine(flows[[f]]))
-  cat("recv:\n")
-  print(recvStateMachine(flows[[f]]))
+  sends <- rbind(sends, sendStateMachine(flows[[f]]))
+  recvs <- rbind(recvs, recvStateMachine(flows[[f]]))
 }
 
-dumpFlows(flows)
+sendSandboxMean <- mean(sends$sandboxTimes)
+sendRoutingMean <- mean(sends$routingTimes)
+recvSandboxMean <- mean(recvs$sandboxTimes)
+recvRoutingMean <- mean(recvs$routingTimes)
+
+cat("Saw ", nrow(sends), " sends and ", nrow(recvs), "recvs\n")
+cat("Send means: sandbox: ", sendSandboxMean, " routing: ", sendRoutingMean, "\n")
+cat("Recv means: sandbox: ", recvSandboxMean, " routing: ", recvRoutingMean, "\n")
+cat("Sends:\n")
+print(sends)
+cat("Recvs:\n")
+print(recvs)
