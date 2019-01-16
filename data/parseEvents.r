@@ -31,7 +31,7 @@ getSendto <- function(str) {
   if (length(matches) != 0) {
     cpu <- as.numeric(sub(linePattern, "\\1", matches))
     ts <- as.numeric(sub(linePattern, "\\2", matches))
-    list(cpu=cpu, ts=ts, even="sys_enter_sendto", dev=NULL, skbaddr=NULL)
+    list(cpu=cpu, ts=ts, event="sys_enter_sendto", dev="", skbaddr="")
   } else {
     NULL
   }
@@ -43,7 +43,7 @@ getRecvmsg <- function(str) {
   if (length(matches) != 0) {
     cpu <- as.numeric(sub(linePattern, "\\1", matches))
     ts <- as.numeric(sub(linePattern, "\\2", matches))
-    list(cpu=cpu, ts=ts, even="sys_exit_recvmsg", dev=NULL, skbaddr=NULL)
+    list(cpu=cpu, ts=ts, event="sys_exit_recvmsg", dev="", skbaddr="")
   } else {
     NULL
   }
@@ -110,22 +110,28 @@ sendStateMachine <- function(flow) {
   state <- 0
   prevTime <- 0
 
+  syscallTimes <- c()
   sandboxTimes <- c()
   routingTimes <- c()
 
   for (f in flow) {
     if (state == 0
-        && f[["event"]] == "net_dev_queue"
-        && f[["dev"]] == SANDBOX_IFACE) {
+        && f[["event"]] == "sys_enter_sendto") {
       prevTime <- f[["ts"]]
       state <- 1
     } else if (state == 1
+        && f[["event"]] == "net_dev_queue"
+        && f[["dev"]] == SANDBOX_IFACE) {
+      syscallTimes <- c(syscallTimes, (f[["ts"]] - prevTime) * 1000000)
+      prevTime <- f[["ts"]]
+      state <- 2
+    } else if (state == 2
         && f[["event"]] == "netif_receive_skb"
         && f[["dev"]] == DOCKER_IFACE) {
       sandboxTimes <- c(sandboxTimes, (f[["ts"]] - prevTime) * 1000000)
       prevTime <- f[["ts"]]
-      state <- 2
-    } else if (state == 2
+      state <- 3
+    } else if (state == 3
        && f[["event"]] == "net_dev_queue"
        && f[["dev"]] == HOST_IFACE) {
       routingTimes <- c(routingTimes, (f[["ts"]] - prevTime) * 1000000)
@@ -134,20 +140,24 @@ sendStateMachine <- function(flow) {
   }
 
   # Handle edge case where trace ends in the middle of a cycle
-  # by removing the last element
-  if (state == 2) {
+  # by removing the last elements
+  if (state >= 2) {
+    syscallTimes <- syscallTimes[-length(syscallTimes)]
+  }
+  if (state == 3) {
     sandboxTimes <- sandboxTimes[-length(sandboxTimes)]
   }
 
-  data.frame(sandboxTimes=sandboxTimes, routingTimes=routingTimes)
+  data.frame(syscallTimes=syscallTimes, sandboxTimes=sandboxTimes, routingTimes=routingTimes)
 }
 
 recvStateMachine <- function(flow) {
   state <- 0
   prevTime <- 0
 
-  sandboxTimes <- c()
   routingTimes <- c()
+  sandboxTimes <- c()
+  syscallTimes <- c()
 
   for (f in flow) {
     if (state == 0
@@ -165,17 +175,25 @@ recvStateMachine <- function(flow) {
        && f[["event"]] == "netif_receive_skb"
        && f[["dev"]] == SANDBOX_IFACE) {
       sandboxTimes <- c(sandboxTimes, (f[["ts"]] - prevTime) * 1000000)
+      prevTime <- f[["ts"]]
+      state <- 3
+    } else if (state == 3
+       && f[["event"]] == "sys_exit_recvmsg") {
+      syscallTimes <- c(syscallTimes, (f[["ts"]] - prevTime) * 1000000)
       state <- 0
     }
   }
 
   # Handle edge case where trace ends in the middle of a cycle
   # by removing the last element
-  if (state == 2) {
+  if (state >= 2) {
     routingTimes <- routingTimes[-length(routingTimes)]
   }
+  if (state == 3) {
+    sandboxTimes <- sandboxTimes[-length(sandboxTimes)]
+  }
 
-  data.frame(sandboxTimes=sandboxTimes, routingTimes=routingTimes)
+  data.frame(syscallTimes=syscallTimes, sandboxTimes=sandboxTimes, routingTimes=routingTimes)
 }
 
 
@@ -195,21 +213,20 @@ while (T) {
   recvs <- data.frame()
 
   flows <- readNetTrace(paste(data_path, "/", line, sep=""))
-  dumpFlows(flows)
-  stop("done")
-
 
   for (f in ls(flows)) {
     sends <- rbind(sends, sendStateMachine(flows[[f]]))
     recvs <- rbind(recvs, recvStateMachine(flows[[f]]))
   }
 
+  sendSyscallMean <- mean(sends$syscallTimes)
   sendSandboxMean <- mean(sends$sandboxTimes)
   sendRoutingMean <- mean(sends$routingTimes)
+  recvSyscallMean <- mean(recvs$syscallTimes)
   recvSandboxMean <- mean(recvs$sandboxTimes)
   recvRoutingMean <- mean(recvs$routingTimes)
 
   cat("Saw ", nrow(sends), " sends and ", nrow(recvs), "recvs\n")
-  cat("Send means: sandbox: ", sendSandboxMean, " routing: ", sendRoutingMean, "\n")
-  cat("Recv means: sandbox: ", recvSandboxMean, " routing: ", recvRoutingMean, "\n")
+  cat("Send means: syscalls: ", sendSyscallMean, " sandbox: ", sendSandboxMean, " routing: ", sendRoutingMean, "\n")
+  cat("Recv means: syscalls: ", recvSyscallMean, " sandbox: ", recvSandboxMean, " routing: ", recvRoutingMean, "\n")
 }
