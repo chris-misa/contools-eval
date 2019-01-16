@@ -12,41 +12,16 @@ export NETWORK="bridge"
 
 export MAX_CPU=16
 
-TRACE_CMD_ARGS="-e syscalls:sys_enter_sendto -e net:net_dev_queue -e net:netif_receive_skb -e net:napi_gro_frags_entry -e net:net_dev_start_xmit -e syscalls:sys_exit_recvmsg"
+TRACE_CMD_ARGS="-e syscalls:sys_enter_sendto -e net:net_dev_queue -e net:netif_receive_skb -e net:napi_gro_frags_entry -e net:net_dev_start_xmit -e syscalls:sys_exit_recvmsg -M 1"
 TRACE_CMD_CMD="sleep 0.1"
 
+export DOCKER_CPUSET_CMD="$(pwd)/dockercpuset.sh"
 
 CONTAINER_COUNTS=(
 # `seq 0 1 100`
-0
-#   1
-#   2
-#   3
-#   5
-#   7
-#   11
-#   17
-#   25
-#   38
-#   57
-#   86
-#   129
-#   291
-#   437
-#   656
-#   985
-#   1477
-#   2216
-#   3325
-#   4987
-#   7481
-#   11222
-#   16834
-#   25251
+4
 )
-# Logarithmic number of containers: [int(1.5 ** x) for x in range(27)]
 
-NATIVE_PING_CMD="${HOME}/contools-eval/iputils/ping"
 export CONTAINER_PING_CMD="/iputils/ping"
 
 export PING_CONTAINER_IMAGE="chrismisa/contools:ping-ubuntu"
@@ -71,38 +46,6 @@ echo "lsb_release -a -> $(lsb_release -a)" >> $META_DATA
 echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
 
 #
-# Native run
-#
-
-echo $B Native control $B
-# Run ping in background
-$NATIVE_PING_CMD $PING_ARGS $TARGET_IPV4 \
-	> /dev/null &
-#  > native_control_${TARGET_IPV4}.ping &
-echo "  pinging. . ."
-
-$PAUSE_CMD
-
-PING_PID=`ps -e | grep ping | sed -E 's/ *([0-9]+) .*/\1/'`
-echo "  got ping pid: $PING_PID"
-
-$PAUSE_CMD
-trace-cmd record $TRACE_CMD_ARGS $TRACE_CMD_CMD
-echo "  traced"
-
-$PAUSE_CMD
-
-kill -INT $PING_PID
-echo "  killed ping"
-
-trace-cmd report -t > native_control_${TARGET_IPV4}.trace
-echo "native_control_${TARGET_IPV4}.trace" >> $MANIFEST
-echo $B Converted trace $B
-
-
-$PAUSE_CMD
-
-#
 # Container pings
 #
 
@@ -120,10 +63,13 @@ for n_containers in ${CONTAINER_COUNTS[@]}; do
 
 	echo "  pinging. . . "
 
+	$DOCKER_CPUSET_CMD $n_containers
 	$PAUSE_CMD
+
 
 	PING_PID=`docker inspect $PING_CONTAINER_NAME -f '{{.State.Pid}}'`
 	echo "  got ping pid: $PING_PID"
+	echo "$PING_PID" > ${n_containers}containers_ping.pid
 
 	$PAUSE_CMD
 	trace-cmd record $TRACE_CMD_ARGS $TRACE_CMD_CMD
