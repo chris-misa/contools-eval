@@ -1,4 +1,4 @@
-containerNames <- seq(5,100,5)
+containerNames <- seq(1,10,1)
 
 args <- commandArgs(trailingOnly=T)
 usage <- "rscript genreport.r <path to data folder>"
