@@ -2,11 +2,11 @@
 
 B="----------------"
 
-TARGET_IPV4="10.10.1.2"
+TARGET_IPV4="10.10.1.1"
 
 PING_ARGS="-D -i 0.0 -s 56"
 
-export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
+export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.2"
 
 # Careful: always change this in docker compose file too!
 export NETWORK="bridge"
