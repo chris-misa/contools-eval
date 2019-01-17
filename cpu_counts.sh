@@ -12,7 +12,7 @@ export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
 export NETWORK="bridge"
 
 # export CONTAINER_COUNTS="`seq 0 16 96`"
-export CONTAINER_COUNTS="`seq 0 4 100`"
+export CONTAINER_COUNTS="`seq 0 1 10`"
 #export CONTAINER_COUNTS="10"
 
 export CPU_COUNTS=(16)

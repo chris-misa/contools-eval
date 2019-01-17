@@ -18,8 +18,8 @@ TRACE_CMD_CMD="sleep 0.02"
 export DOCKER_CPUSET_CMD="$(pwd)/dockercpuset.sh"
 
 CONTAINER_COUNTS=(
-# `seq 0 1 100`
-1 2 3 4
+`seq 1 1 16`
+# 1 2 3 4
 )
 
 export CONTAINER_PING_CMD="/iputils/ping"
@@ -44,6 +44,8 @@ echo "uname -a -> $(uname -a)" >> $META_DATA
 echo "docker -v -> $(docker -v)" >> $META_DATA
 echo "lsb_release -a -> $(lsb_release -a)" >> $META_DATA
 echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
+
+sleep 30
 
 #
 # Container pings
