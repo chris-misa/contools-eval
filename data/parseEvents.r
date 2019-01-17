@@ -1,3 +1,5 @@
+containerNames <- seq(1,16,1)
+
 args <- commandArgs(trailingOnly=T)
 usage <- "rscript genreport.r <path to data folder>"
 if (length(args) != 1) {
@@ -11,7 +13,7 @@ DOCKER_IFACE <- "docker0"
 HOST_IFACE <- "eno1d1"
 
 parseTraceLine <- function(line) {
-  linePattern <- ".+ \\[([0-9]+)\\] ([0-9\\.]+): ([a-z_]+): +dev=([a-z0-9]+) .*skbaddr=([x0-9a-f]+) .*"
+  linePattern <- ".+ \\[([0-9]+)\\] +([0-9\\.]+): +([a-z_]+): +dev=([a-z0-9]+) .*skbaddr=([x0-9a-f]+) .*"
   matches <- grep(linePattern, line, value=T)
   if (length(matches) != 0) {
     cpu <- as.numeric(sub(linePattern, "\\1", matches))
@@ -26,7 +28,7 @@ parseTraceLine <- function(line) {
 }
 
 getSendto <- function(str) {
-  linePattern <- ".+ \\[([0-9]+)\\] ([0-9\\.]+): sys_enter_sendto: .*"
+  linePattern <- ".+ \\[([0-9]+)\\] +([0-9\\.]+): +sys_enter_sendto: .*"
   matches <- grep(linePattern, str, value=T)
   if (length(matches) != 0) {
     cpu <- as.numeric(sub(linePattern, "\\1", matches))
@@ -38,7 +40,7 @@ getSendto <- function(str) {
 }
 
 getRecvmsg <- function(str) {
-  linePattern <- ".+ \\[([0-9]+)\\] ([0-9\\.]+): sys_exit_recvmsg: .*"
+  linePattern <- ".+ \\[([0-9]+)\\] +([0-9\\.]+): +sys_exit_recvmsg: .*"
   matches <- grep(linePattern, str, value=T)
   if (length(matches) != 0) {
     cpu <- as.numeric(sub(linePattern, "\\1", matches))
@@ -54,6 +56,7 @@ readNetTrace <- function(filePath) {
   file <- readLines(con, n=-1)
   close(con)
   nlines <- length(file)
+  recvmsgUsed <- rep(F, nlines) # for keeping track of which sys_exit_recvmsg event's we've used so far
   flows <- new.env()
   i <- 1
   while (i <= nlines) {
@@ -79,13 +82,17 @@ readNetTrace <- function(filePath) {
       flows[[k]][[length(flows[[k]])+1]] <- l
 
       # Forwardtrack to get recvmsg
+      #
+      # This stalls because processes may restart on a new CPU!
+      # Idea: look for next unmarked temporal sys_exit_recvmsg, use and mark it
+      #
       if (l[["event"]] == "netif_receive_skb" && l[["dev"]] == SANDBOX_IFACE) {
-        targetCPU <- l[["cpu"]]
         j <- i + 1
         while (j <= nlines) {
           maybeRecv <- getRecvmsg(file[[j]])
-          if (!is.null(maybeRecv) && maybeRecv[["cpu"]] == targetCPU) {
+          if (!recvmsgUsed[[j]] && !is.null(maybeRecv)) {
             flows[[k]][[length(flows[[k]])+1]] <- maybeRecv
+            recvmsgUsed[[j]] <- T
             break
           }
           j <- j + 1
@@ -106,6 +113,19 @@ dumpFlows <- function(flows) {
   }
 }
 
+dumpFlowsToFile <- function(flows, filePath) {
+  con <- file(filePath, "wt")
+  sink(con)
+  for (f in ls(flows)) {
+    cat("New skbaddr: ", f, "\n")
+    for (l in flows[[f]]) {
+      cat(sprintf("%.9f: %s: dev=%s skbaddr=%s\n",l[["ts"]], l[["event"]], l[["dev"]], l[["skbaddr"]]))
+    }
+  }
+  sink()
+  close(con)
+}
+
 sendStateMachine <- function(flow) {
   state <- 0
   prevTime <- 0
@@ -115,8 +135,19 @@ sendStateMachine <- function(flow) {
   routingTimes <- c()
 
   for (f in flow) {
-    if (state == 0
-        && f[["event"]] == "sys_enter_sendto") {
+    # if (state == 0
+    #     && f[["event"]] == "sys_enter_sendto") {
+    if (f[["event"]] == "sys_enter_sendto") {
+    
+      # Handle edge case where trace ends in the middle of a cycle
+      # by removing the last elements
+      if (state >= 2) {
+        syscallTimes <- syscallTimes[-length(syscallTimes)]
+      }
+      if (state == 3) {
+        sandboxTimes <- sandboxTimes[-length(sandboxTimes)]
+      }
+
       prevTime <- f[["ts"]]
       state <- 1
     } else if (state == 1
@@ -160,9 +191,19 @@ recvStateMachine <- function(flow) {
   syscallTimes <- c()
 
   for (f in flow) {
-    if (state == 0
-        && f[["event"]] == "napi_gro_frags_entry"
+    #if (state == 0
+    if (f[["event"]] == "napi_gro_frags_entry"
         && f[["dev"]] == HOST_IFACE) {
+
+      # Handle edge case where trace ends in the middle of a cycle
+      # by removing the last element
+      if (state >= 2) {
+        routingTimes <- routingTimes[-length(routingTimes)]
+      }
+      if (state == 3) {
+        sandboxTimes <- sandboxTimes[-length(sandboxTimes)]
+      }
+
       prevTime <- f[["ts"]]
       state <- 1
     } else if (state == 1
@@ -201,6 +242,8 @@ recvStateMachine <- function(flow) {
 # Main work starts here
 #
 
+sendData <- matrix(,nrow=3,ncol=0)
+recvData <- matrix(,nrow=3,ncol=0)
 
 con <- file(paste(data_path, "/manifest", sep=""), "r")
 while (T) {
@@ -209,10 +252,14 @@ while (T) {
     break
   }
 
+  cat("File: ", line, ":\n")
+
   sends <- data.frame()
   recvs <- data.frame()
 
   flows <- readNetTrace(paste(data_path, "/", line, sep=""))
+
+  dumpFlowsToFile(flows, paste(data_path, "flows", line, sep=""))
 
   for (f in ls(flows)) {
     sends <- rbind(sends, sendStateMachine(flows[[f]]))
@@ -226,7 +273,34 @@ while (T) {
   recvSandboxMean <- mean(recvs$sandboxTimes)
   recvRoutingMean <- mean(recvs$routingTimes)
 
+  sendData <- cbind(sendData, c(sendSyscallMean, sendSandboxMean, sendRoutingMean))
+  recvData <- cbind(recvData, c(recvSyscallMean, recvSandboxMean, recvRoutingMean))
+
   cat("Saw ", nrow(sends), " sends and ", nrow(recvs), "recvs\n")
   cat("Send means: syscalls: ", sendSyscallMean, " sandbox: ", sendSandboxMean, " routing: ", sendRoutingMean, "\n")
   cat("Recv means: syscalls: ", recvSyscallMean, " sandbox: ", recvSandboxMean, " routing: ", recvRoutingMean, "\n")
 }
+
+print(sendData)
+print(recvData)
+
+
+pdf(file=paste(data_path, "/sendMeans.pdf", sep=""), width=6.5, height=5)
+barplot(sendData, beside=F,
+    ylab=expression(paste("Time (",mu,"s)", sep="")),
+    xlab="Number of containers",
+    names.arg=containerNames,
+    legend=c("syscall", "sandbox", "routing"),
+    args.legend=list(x="topleft"))
+
+dev.off()
+
+
+pdf(file=paste(data_path, "/recvMeans.pdf", sep=""), width=6.5, height=5)
+barplot(recvData, beside=F,
+    ylab=expression(paste("Time (",mu,"s)", sep="")),
+    xlab="Number of containers",
+    names.arg=containerNames,
+    legend=c("syscall", "sandbox", "routing"),
+    args.legend=list(x="topleft"))
+dev.off()

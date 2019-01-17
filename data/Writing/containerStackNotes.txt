@@ -1,0 +1,34 @@
+Initial selection of trace events for labeled points in figure.
+
+Send trace events:
+
+1. sys_enter_sendto
+      |
+      +-> 'syscall' overhead
+      |
+2. net_dev_queue (on container's sandbox iface)
+      |
+      +-> 'sandbox' overhead
+      |
+3. netif_receive_skb (on docker's linux bridge)
+      |
+      +-> 'routing' overhead
+      |
+4. net_dev_queue (on host's iface)
+
+
+Receive trace events:
+
+4. napi_gro_frags_entry (on host's iface)
+      |
+      +-> 'routing' overhead
+      |
+3. net_dev_start_xmit (on docker's linux bridge)
+      |
+      +-> 'sandbox' overhead
+      |
+2. netif_receive_skb (on container's sandbox iface)
+      |
+      +-> 'syscall' overhead
+      |
+1. sys_exit_recvmsg
