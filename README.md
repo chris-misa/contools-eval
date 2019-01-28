@@ -8,4 +8,6 @@ General workflow:
 2. Run selected experiment
 3. Collect the data
 
+## RTTs
 
+`./run_rtts.sh`
