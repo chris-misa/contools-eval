@@ -13,9 +13,9 @@ n_cpus <- c(8)
 # container_labels <- seq(0, 100, 10)
 # x_label_at <- seq(0, 100, 10)
 
-n_containers <- seq(0, 100, 4)
-container_labels <- seq(0, 100, 4)
-x_label_at <- seq(0, 100, 4)
+n_containers <- seq(0, 1000, 10)
+container_labels <- seq(0, 1000, 100)
+x_label_at <- seq(0, 100, 10)
 
 #n_containers <- seq(0, 96, 16)
 #container_labels <- seq(0, 96, 16)
@@ -127,7 +127,9 @@ while (T) {
   #
   # Draw lines for this CPU setting
   #
-  ybnds <- c(0, max(containerMeans))
+  # ybnds <- c(0, max(containerMeans))
+  ySpace <- 200
+  ybnds <- c(0, median(containerMeans) + ySpace)
   xbnds <- c(0, length(containerMeans) - 1)
   pdf(file=paste(data_path, "/", line, "/means.pdf", sep=""), width=6.5, height=5)
   par(mar=c(5, 5, 1, 3))
@@ -150,6 +152,30 @@ while (T) {
 
   dev.off()
 
+
+  #
+  # Draw std deviations
+  ybnds <- c(0, median(containerSds) + ySpace)
+  pdf(file=paste(data_path, "/", line, "/sds.pdf", sep=""), width=6.5, height=5)
+  par(mar=c(5, 5, 1, 3))
+  plot(0, type="n", ylim=ybnds, xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Standard Deviation RTT (",mu,"s)", sep="")), main="")
+
+  grid()
+
+  # Native Sd
+  lines(seq(0, length(nativeSds)-1), nativeSds, type="p", pch=20, col="gray")
+  # Container Means
+
+  lines(seq(0, length(containerSds)-1), containerSds, type="p", pch=20, col="black")
+
+  # Add x-axis
+  axis(1, at=x_label_at, labels=container_labels, las=2)
+
+  # Add legend
+  legend("bottomright", legend=c("container", "native"), col=c("black", "gray"),
+    pch=c(20,20), cex=0.8, bg="white")
+
+  dev.off()
 
   #
   # Draw difference
