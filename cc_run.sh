@@ -1,23 +1,8 @@
 #!/bin/bash
 
-
-# TARGET_IPV4="10.10.1.2"
-
-
-export NATIVE_PING_CMD="${HOME}/contools-eval/iputils/ping"
-export CONTAINER_PING_CMD="/iputils/ping"
-
-export PING_CONTAINER_IMAGE="chrismisa/contools:ping-ubuntu"
-
-export PING_CONTAINER_NAME="ping-container"
-export TARGET_CONTAINER_NAME="target"
-
-export COMPOSE_FILE="${HOME}/contools-eval/ping_compose/docker-compose.yml"
-
-export PAUSE_CMD="sleep 5"
-
-export META_DATA="Metadata"
-export MANIFEST="manifest"
+#
+# Script to setup and run container-to-container measurement path
+#
 
 mkdir ${DATE_TAG}_CC
 cd ${DATE_TAG}_CC

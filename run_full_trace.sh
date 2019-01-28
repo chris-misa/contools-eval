@@ -19,32 +19,7 @@ TRACE_CMD_CMD="sleep 0.02"
 CONTAINER_COUNTS=(
 # `seq 0 1 100`
 1 4 8 16
-#   1
-#   2
-#   3
-#   5
-#   7
-#   11
-#   17
-#   25
-#   38
-#   57
-#   86
-#   129
-#   291
-#   437
-#   656
-#   985
-#   1477
-#   2216
-#   3325
-#   4987
-#   7481
-#   11222
-#   16834
-#   25251
 )
-# Logarithmic number of containers: [int(1.5 ** x) for x in range(27)]
 
 NATIVE_PING_CMD="${HOME}/contools-eval/iputils/ping"
 export CONTAINER_PING_CMD="/iputils/ping"

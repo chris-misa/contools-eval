@@ -1,25 +1,23 @@
 #!/bin/bash
 
 #
-# Set up nodes in multitarget 1 experiment
+# Install dependencies on root measurement node.
 #
 
-# Copy in config files
-# mkdir -p /etc/docker
-# cp config/daemon.json /etc/docker/
-# cp config/ndppd.conf /etc/
-
-# Get dependencies for the iputils build
+#
+# iputils
+#
 apt-get update
 apt-get install -y libcap-dev libidn2-0-dev nettle-dev trace-cmd
 
-# Get and build iputils
 git clone https://github.com/chris-misa/iputils.git
 pushd iputils
 make
 popd
 
-# Set up docker
+#
+# docker-ce
+#
 apt-get install -y \
   apt-transport-https \
   ca-certificates \
@@ -36,7 +34,9 @@ add-apt-repository \
 apt-get update
 apt-get install -y docker-ce
 
-# Get docker-compose (from https://docs.docker.com/compose/install/#install-compose)
+#
+# docker-compose (from https://docs.docker.com/compose/install/#install-compose)
+#
 sudo curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
@@ -75,9 +75,3 @@ service apparmor teardown
 #
 # docker network create -d ovs ovsnet
 
-
-#
-# Mount and setup cpuset fs
-#
-mkdir -p /dev/cpuset
-mount -t cpuset cpuset /dev/cpuset

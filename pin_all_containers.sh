@@ -1,15 +1,20 @@
 #!/bin/bash
 
 #
+# Pin all running containers to a specific CPU.
+#
 # Note: There are several options as to how to distribute containers among
 # CPUs. Un-comment one of these.
 #
 
+DOCKER_PIDS=$(docker inspect $(docker ps -aq) -f '{{.State.Pid}}')
+
 #
-# Restrict container processes to run on subset of available CPUs
+# Restrict all container processes to run on the same subset of available CPUs
+#
+# Takes CPU_LIST : String of form "<first_cpu>-<last_cpu>" from env
 #
 
-# DOCKER_PIDS=$(docker inspect $(docker ps -aq) -f '{{.State.Pid}}')
 # for PID in $DOCKER_PIDS; do
 # 	taskset --cpu-list -p $CPU_LIST $PID
 # done
@@ -18,8 +23,9 @@
 #
 # Distribute container processes among given CPUS
 #
+# Takes MAX_CPU : Int from env
+#
 
-DOCKER_PIDS=$(docker inspect $(docker ps -aq) -f '{{.State.Pid}}')
 cur_cpu=0
 for PID in $DOCKER_PIDS; do
 	taskset --cpu-list -p ${cur_cpu}-${cur_cpu} $PID
@@ -28,10 +34,11 @@ done
 
 
 #
-# Every container process gets four CPUs
+# Every container process gets two CPUs
 #
+# Takes MAX_CPU : Int from env
 # 
-# DOCKER_PIDS=$(docker inspect $(docker ps -aq) -f '{{.State.Pid}}')
+
 # cur_cpu=0
 # for PID in $DOCKER_PIDS; do
 # 	next_cpu=$(( $cur_cpu + 1 ))
