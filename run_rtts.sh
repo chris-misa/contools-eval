@@ -22,7 +22,7 @@ export CONTAINER_COUNTS="5"
 # Array of cpu counts
 #
 
-export CPU_COUNTS=(8)
+export CPU_COUNTS=(16)
 
 # Arguments handed to ping in traffic containers
 export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"

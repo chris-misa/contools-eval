@@ -4,6 +4,8 @@
 # Script to setup and run container-to-container measurement path
 #
 
+TARGET_CONTAINER_NAME="target-container"
+
 mkdir ${DATE_TAG}_CC
 cd ${DATE_TAG}_CC
 
