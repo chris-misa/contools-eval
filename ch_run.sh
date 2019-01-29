@@ -4,7 +4,7 @@
 # Script to run container-to-host measurement path
 #
 
-export TARGET_IPV4="10.10.1.1"
+export TARGET_IPV4=$CONTAINER_HOST_TARGET
 
 mkdir ${DATE_TAG}_CH
 cd ${DATE_TAG}_CH

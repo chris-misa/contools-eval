@@ -4,7 +4,7 @@
 # Script to run container-to-network measurement path
 #
 
-export TARGET_IPV4="10.10.1.2"
+export TARGET_IPV4=$CONTAINER_NETWORK_TARGET
 
 mkdir ${DATE_TAG}_CN
 cd ${DATE_TAG}_CN

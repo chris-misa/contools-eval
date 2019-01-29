@@ -8,7 +8,7 @@ export C="-+-+-+-+-+-+-+-+"
 #
 
 #export PING_ARGS="-D -i 0.0 -s 56 -c 2000"
-export PING_ARGS="-D -i 0.0 -s 56 -c 100"
+export PING_ARGS="-D -i 0.0 -s 56 -c 2000"
 
 #
 # Sequence of container counts
@@ -22,7 +22,10 @@ export CONTAINER_COUNTS="5"
 # Array of cpu counts
 #
 
-export CPU_COUNTS=(16)
+export CPU_COUNTS=(20)
+
+export CONTAINER_NETWORK_TARGET="10.10.1.1"
+export CONTAINER_HOST_TARGET="10.10.1.2"
 
 # Arguments handed to ping in traffic containers
 export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
