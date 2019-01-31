@@ -8,7 +8,7 @@
 # iputils
 #
 apt-get update
-apt-get install -y libcap-dev libidn2-0-dev nettle-dev trace-cmd
+apt-get install -y libcap-dev libidn2-0-dev nettle-dev trace-cmd vnstat
 
 git clone https://github.com/chris-misa/iputils.git
 pushd iputils
@@ -53,13 +53,13 @@ service apparmor teardown
 #
 # Grab and build netperf
 #
-# apt-get install -y texinfo
-# git clone https://github.com/HewlettPackard/netperf.git
-# pushd netperf
-# ./autogen.sh && ./configure \
-# 	&& make && make install \
-# 	|| echo "Failed to build netperf"
-# popd
+apt-get install -y texinfo automake
+git clone https://github.com/HewlettPackard/netperf.git
+pushd netperf
+./autogen.sh && ./configure \
+	&& make && make install \
+	|| echo "Failed to build netperf"
+popd
 
 
 #
