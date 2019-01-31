@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>
+#include <sys/time.h>
 
 #define MAX_DEV_FILE_SIZE 1024
 
@@ -52,7 +53,8 @@ read_proc_net_dev(struct net_dev_counters *counters, const char *filepath, const
     close(fd);
     return -1;
   }
- 
+
+  close(fd);
 
   // Skip first two lines
   buf_ptr = buf;
@@ -119,7 +121,7 @@ main(int argc, char *argv[])
   struct net_dev_counters new_counters;
   double bits_per_sec;
   double packets_per_sec;
-  struct time_val ts;
+  struct timeval ts;
   
   int res;
 
@@ -144,8 +146,12 @@ main(int argc, char *argv[])
     bits_per_sec = (double)((new_counters.bytes - old_counters.bytes) * 8);
     packets_per_sec = (double)new_counters.packets - (double)old_counters.packets;
 
-    
-    printf("%f bits per second; %f packets per second;\n", bits_per_sec, packets_per_sec);
+    gettimeofday(&ts, NULL);
+    printf("[%ld.%06ld] %f bps %f pps\n",
+        ts.tv_sec,
+        ts.tv_usec,
+        bits_per_sec,
+        packets_per_sec);
   
     // Save current counter state
     old_counters = new_counters;
