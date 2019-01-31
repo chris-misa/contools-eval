@@ -15,8 +15,10 @@
 #define MAX_DEV_FILE_SIZE 1024
 
 struct net_dev_counters {
-  uint64_t bytes;
-  uint64_t packets;
+  uint64_t rx_bytes;
+  uint64_t rx_packets;
+  uint64_t tx_bytes;
+  uint64_t tx_packets;
 };
 
 static int running = 1;
@@ -85,9 +87,11 @@ read_proc_net_dev(struct net_dev_counters *counters, const char *filepath, const
 
     // If this is the target device, parse the line and return, otherwise go on
     if (!strncmp(buf_ptr, dev_name, dev_name_len)) {
-      if (sscanf(buf_ptr, "%*s %ld %ld", 
-            &counters->bytes,
-            &counters->packets) == 2) {
+      if (sscanf(buf_ptr, "%*s %ld %ld %*d %*d %*d %*d %*d %*d %ld %ld", 
+            &counters->rx_bytes,
+            &counters->rx_packets,
+            &counters->tx_bytes,
+            &counters->tx_packets) == 4) {
         return 0;
       } else {
         goto format_err_out;
@@ -112,6 +116,20 @@ format_err_out:
   return -1;
 }
 
+//
+// timeval subtraction
+// returns the difference in seconds as a double
+//
+double
+tv_diff(struct timeval *t1, struct timeval *t2)
+{
+  double res = 0;
+  res = t1->tv_usec - t2->tv_usec;
+  res /= 1000000;
+  res += t1->tv_sec - t2->tv_sec;
+  return res;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -119,10 +137,13 @@ main(int argc, char *argv[])
   char *dev_name;
   struct net_dev_counters old_counters;
   struct net_dev_counters new_counters;
-  double bits_per_sec;
-  double packets_per_sec;
-  struct timeval ts;
-  
+  double rx_bits_per_sec;
+  double rx_packets_per_sec;
+  double tx_bits_per_sec;
+  double tx_packets_per_sec;
+  struct timeval old_ts;
+  struct timeval new_ts;
+  double dt;
   int res;
 
   if (argc != 2) {
@@ -134,6 +155,9 @@ main(int argc, char *argv[])
   // Main loop
   while (running) {
 
+    // Get a dumb timestamp and print
+    gettimeofday(&new_ts, NULL);
+
     // Read proc net dev file
     res = read_proc_net_dev(&new_counters, proc_net_dev_filepath, dev_name);
     if (res == 1) {
@@ -143,21 +167,27 @@ main(int argc, char *argv[])
     }
 
     // Compute rates
-    bits_per_sec = (double)((new_counters.bytes - old_counters.bytes) * 8);
-    packets_per_sec = (double)new_counters.packets - (double)old_counters.packets;
+    dt = tv_diff(&new_ts, &old_ts);
+    rx_bits_per_sec = (double)((new_counters.rx_bytes - old_counters.rx_bytes) * 8) / dt;
+    rx_packets_per_sec = (double)(new_counters.rx_packets - old_counters.rx_packets) / dt;
+    tx_bits_per_sec = (double)((new_counters.tx_bytes - old_counters.tx_bytes) * 8) / dt;
+    tx_packets_per_sec = (double)(new_counters.tx_packets - old_counters.tx_packets) / dt;
 
-    gettimeofday(&ts, NULL);
-    printf("[%ld.%06ld] %f bps %f pps\n",
-        ts.tv_sec,
-        ts.tv_usec,
-        bits_per_sec,
-        packets_per_sec);
+
+    printf("[%ld.%06ld] rx_bps: %f rx_pps: %f tx_bps: %f tx_pps: %f\n",
+        new_ts.tv_sec,
+        new_ts.tv_usec,
+        rx_bits_per_sec,
+        rx_packets_per_sec,
+        tx_bits_per_sec,
+        tx_packets_per_sec);
   
-    // Save current counter state
+    // Save current state
     old_counters = new_counters;
+    old_ts = new_ts;
     
     // Rest a bit
-    sleep(1);
+    sleep(2);
   }
 
   return 0;
