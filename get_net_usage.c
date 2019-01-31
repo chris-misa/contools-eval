@@ -18,6 +18,8 @@ struct net_dev_counters {
   uint64_t packets;
 };
 
+static int running = 1;
+
 void
 usage(const char *name)
 {
@@ -47,8 +49,10 @@ read_proc_net_dev(struct net_dev_counters *counters, const char *filepath, const
   // Read the whole file
   if ((len = read(fd, buf, MAX_DEV_FILE_SIZE)) <= 0) {
     fprintf(stderr, "Failed to read from proc file\n");
+    close(fd);
     return -1;
   }
+ 
 
   // Skip first two lines
   buf_ptr = buf;
@@ -111,7 +115,11 @@ main(int argc, char *argv[])
 {
   char *proc_net_dev_filepath = "/proc/net/dev";
   char *dev_name;
+  struct net_dev_counters old_counters;
   struct net_dev_counters new_counters;
+  double bytes_per_sec;
+  double packets_per_sec;
+  
   int res;
 
   if (argc != 2) {
@@ -120,11 +128,27 @@ main(int argc, char *argv[])
   }
   dev_name = argv[1];
 
-  res = read_proc_net_dev(&new_counters, proc_net_dev_filepath, dev_name);
-  if (res == 1) {
-    printf("Failed to find device named %s\n", dev_name);
-  } else {
-    printf("Got bytes: %ld, packets: %ld\n", new_counters.bytes, new_counters.packets);
+  // Main loop
+  while (running) {
+
+    // Read proc net dev file
+    res = read_proc_net_dev(&new_counters, proc_net_dev_filepath, dev_name);
+    if (res == 1) {
+      printf("Failed to find device named %s\n", dev_name);
+    } else if (res == -1) {
+      printf("Failed to read from proc file\n");
+    }
+
+    // Compute rates
+    bytes_per_sec = (double)new_counters.bytes - (double)old_counters.bytes;
+    packets_per_sec = (double)new_counters.packets - (double)old_counters.packets;
+    printf("%f bytes per second; %f packets per second;\n", bytes_per_sec, packets_per_sec);
+  
+    // Save current counter state
+    old_counters = new_counters;
+    
+    // Rest a bit
+    sleep(1);
   }
 
   return 0;
