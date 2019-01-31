@@ -117,8 +117,9 @@ main(int argc, char *argv[])
   char *dev_name;
   struct net_dev_counters old_counters;
   struct net_dev_counters new_counters;
-  double bytes_per_sec;
+  double bits_per_sec;
   double packets_per_sec;
+  struct time_val ts;
   
   int res;
 
@@ -140,9 +141,11 @@ main(int argc, char *argv[])
     }
 
     // Compute rates
-    bytes_per_sec = (double)new_counters.bytes - (double)old_counters.bytes;
+    bits_per_sec = (double)((new_counters.bytes - old_counters.bytes) * 8);
     packets_per_sec = (double)new_counters.packets - (double)old_counters.packets;
-    printf("%f bytes per second; %f packets per second;\n", bytes_per_sec, packets_per_sec);
+
+    
+    printf("%f bits per second; %f packets per second;\n", bits_per_sec, packets_per_sec);
   
     // Save current counter state
     old_counters = new_counters;
