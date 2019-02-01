@@ -63,6 +63,14 @@ popd
 
 
 #
+# Build the little net monitor
+#
+
+pushd get_net_usage
+make
+popd
+
+#
 # Spin up the OVS bridge
 #
 # modprobe openvswitch
