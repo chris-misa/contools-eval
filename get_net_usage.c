@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <sys/time.h>
+#include <stdlib.h>
 
 #define MAX_DEV_FILE_SIZE 1024
 
@@ -26,8 +27,11 @@ static int running = 1;
 void
 usage(const char *name)
 {
-  printf("Usage: %s <device>\n", name);
-  printf("  outputs statistics from /proc/net/dev\n");
+  printf("Usage: %s <device> [-t <interval>] [-X <timeout>]\n", name);
+  printf("  Outputs statistics from /proc/net/dev every <interval> seconds.\n");
+  printf("  If <interval> is not given, defaults to 2.\n");
+  printf("  If no traffic is seen for <timeout> seconds, exits.\n");
+  printf("  The default <timeout> value is 120\n");
 }
 
 //
@@ -145,12 +149,36 @@ main(int argc, char *argv[])
   struct timeval new_ts;
   double dt;
   int res;
+  int i;
 
-  if (argc != 2) {
+  int interval_sec = 2;
+  int timeout_sec = 120;
+
+  // Parse arguments
+  if (argc < 2) {
     usage(argv[0]);
     return 0;
   }
   dev_name = argv[1];
+  for (i = 2; i + 1 < argc && argv[i][0] == '-'; i++) {
+    switch (argv[i][1]) {
+      case 't':
+        interval_sec = atoi(argv[i+1]);
+        i++;
+        break;
+      case 'X':
+        timeout_sec = atoi(argv[i+1]);
+        i++;
+        break;
+      default:
+        usage(argv[0]);
+        return 0;
+    }
+  }
+
+  printf("Running with interval: %d, timeout: %d\n",
+      interval_sec,
+      timeout_sec); 
 
   // Main loop
   while (running) {
@@ -187,7 +215,7 @@ main(int argc, char *argv[])
     old_ts = new_ts;
     
     // Rest a bit
-    sleep(2);
+    sleep(interval_sec);
   }
 
   return 0;
