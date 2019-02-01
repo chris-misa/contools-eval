@@ -13,8 +13,8 @@ n_cpus <- c(8)
 # container_labels <- seq(0, 100, 10)
 # x_label_at <- seq(0, 100, 10)
 
-n_containers <- seq(0, 1000, 10)
-container_labels <- seq(0, 1000, 100)
+n_containers <- seq(0, 100, 1)
+container_labels <- seq(0, 100, 10)
 x_label_at <- seq(0, 100, 10)
 
 #n_containers <- seq(0, 96, 16)
@@ -48,6 +48,48 @@ readPingFile <- function(filePath) {
   data.frame(rtt=rtts, ts=timestamps)
 }
 
+#
+# Read and parse a bandwidth dump
+#
+readTrafficFile <- function(filePath) {
+  con <- file(filePath, "r")
+  timestamps <- c()
+  rxBps <- c()
+  txBps <- c()
+  linePattern <- "\\[([0-9\\.]+)\\] rx_bps: ([0-9\\.]+) .* tx_bps: ([0-9\\.]+) .*"
+  while (T) {
+    line <- readLines(con, n=1)
+    if (length(line) == 0) {
+      break
+    }
+    matches <- grep(linePattern, line, value=T)
+    if(length(matches) != 0) {
+      ts <- as.numeric(sub(linePattern, "\\1", matches))
+      rx <- as.numeric(sub(linePattern, "\\2", matches))
+      tx <- as.numeric(sub(linePattern, "\\3", matches))
+
+      timestamps <- c(timestamps, ts)
+      rxBps <- c(rxBps, rx)
+      txBps <- c(txBps, tx)
+    }
+  }
+  close(con)
+  data.frame(ts=timestamps, rx_bps=rxBps, tx_bps=txBps)
+}
+
+handleTraffic <- function(fp) {
+  traffic <- readTrafficFile(fp)
+
+  pdf(file=paste(fp, "_seq.pdf", sep=""), width=20, height=5)
+  plot(traffic$ts, traffic$rx_bps, type="l")
+  dev.off()
+
+  traffic
+}
+
+trafficAtTime <- function(time, traffic) {
+  traffic[which(traffic$ts > time),][1,]
+}
 
 #
 # Main work
@@ -67,134 +109,152 @@ while (T) {
   if (length(line) == 0) {
     break
   }
+  if (length(grep("traffic", line)) != 0) {
+    traffic <- handleTraffic(paste(data_path, "/", line, sep=""))
+  } else {
+    containerMeans <- c()
+    containerSds <- c()
+    nativeMeans <- c()
+    nativeSds <- c()
+    traffics <- c()
 
-  containerMeans <- c()
-  containerSds <- c()
-  nativeMeans <- c()
-  nativeSds <- c()
+    # Read through container param manifest
+    con2 <- file(paste(data_path, "/", line, "/manifest", sep=""), "r")
+    while (T) {
+      line2 <- readLines(con2, n=1)
+      if (length(line2) == 0) {
+        break
+      }
+      filePath <- paste(data_path, "/", line, "/", line2, sep="")
 
-  # Read through container param manifest
-  con2 <- file(paste(data_path, "/", line, "/manifest", sep=""), "r")
-  while (T) {
-    line2 <- readLines(con2, n=1)
-    if (length(line2) == 0) {
-      break
-    }
-    filePath <- paste(data_path, "/", line, "/", line2, sep="")
+      pingFrame <- readPingFile(filePath)
+      times <- pingFrame$rtt
 
-    times <- readPingFile(filePath)$rtt
+      cat("File:", filePath, "\n")
 
-    cat("File:", filePath, "\n")
-
-    newMean <- mean(times)
-    newSd <- sd(times)
+      newMean <- mean(times)
+      newSd <- sd(times)
 
 
-    # Sort based on native / container
-    if (length(grep("[0-9]+native.*", line2)) != 0) {
-      nativeMeans <- c(nativeMeans, newMean)
-      nativeSds <- c(nativeSds, newSd)
+      # Sort based on native / container
+      if (length(grep("[0-9]+native.*", line2)) != 0) {
+        nativeMeans <- c(nativeMeans, newMean)
+        nativeSds <- c(nativeSds, newSd)
 
-      # Sort based on topology
-      if (length(grep(".*CC", line)) != 0) {
-        ccNativeMeans <- c(ccNativeMeans, newMean)
-      } else if (length(grep(".*CH", line)) != 0) {
-        chNativeMeans <- c(chNativeMeans, newMean)
-      } else if (length(grep(".*CN", line)) != 0) {
-        cnNativeMeans <- c(cnNativeMeans, newMean)
+        # Sort based on topology
+        if (length(grep(".*CC", line)) != 0) {
+          ccNativeMeans <- c(ccNativeMeans, newMean)
+        } else if (length(grep(".*CH", line)) != 0) {
+          chNativeMeans <- c(chNativeMeans, newMean)
+        } else if (length(grep(".*CN", line)) != 0) {
+          cnNativeMeans <- c(cnNativeMeans, newMean)
+        }
+
+      } else if (length(grep("[0-9]+container.*", line2)) != 0) {
+        containerMeans <- c(containerMeans, newMean)
+        containerSds <- c(containerSds, newSd)
+
+        if (exists("traffic")) {
+          traffics <- c(traffics, trafficAtTime(pingFrame$ts[[1]], traffic)$rx_bps)
+        }
+
+        # Sort based on topology
+        if (length(grep(".*CC", line)) != 0) {
+          ccContainerMeans <- c(ccContainerMeans, newMean)
+        } else if (length(grep(".*CH", line)) != 0) {
+          chContainerMeans <- c(chContainerMeans, newMean)
+        } else if (length(grep(".*CN", line)) != 0) {
+          cnContainerMeans <- c(cnContainerMeans, newMean)
+        }
+
+      } else {
+        stop("Can't classify", line2)
       }
 
-    } else if (length(grep("[0-9]+container.*", line2)) != 0) {
-      containerMeans <- c(containerMeans, newMean)
-      containerSds <- c(containerSds, newSd)
+    }
+    close(con2)
 
-      # Sort based on topology
-      if (length(grep(".*CC", line)) != 0) {
-        ccContainerMeans <- c(ccContainerMeans, newMean)
-      } else if (length(grep(".*CH", line)) != 0) {
-        chContainerMeans <- c(chContainerMeans, newMean)
-      } else if (length(grep(".*CN", line)) != 0) {
-        cnContainerMeans <- c(cnContainerMeans, newMean)
-      }
+    #
+    # Draw lines for this CPU setting
+    #
+    # ybnds <- c(0, max(containerMeans))
+    ySpace <- 200
+    ybnds <- c(0, median(containerMeans) + ySpace)
+    xbnds <- c(0, length(containerMeans) - 1)
+    pdf(file=paste(data_path, "/", line, "/means.pdf", sep=""), width=6.5, height=5)
+    par(mar=c(5, 5, 1, 5))
+    plot(0, type="n", ylim=ybnds, xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Mean RTT (",mu,"s)", sep="")), main="")
 
-    } else {
-      stop("Can't classify", line2)
+    grid()
+
+    # Native Mean
+    lines(seq(0, length(nativeMeans)-1), nativeMeans, type="p", pch=20, col="gray")
+    # Container Means
+
+    lines(seq(0, length(containerMeans)-1), containerMeans, type="p", pch=20, col="black")
+
+    # Add x-axis
+    axis(1, at=x_label_at, labels=container_labels, las=2)
+
+    # Add legend
+    legend("bottomright", legend=c("container", "native", "traffic"), col=c("black", "gray", "red"),
+      pch=c(20,20, NA), lty=c(0, 0, 1), cex=0.8, bg="white")
+
+    par(new=T)
+    # Perhaps add traffic
+    if (exists("traffic")) {
+      print(traffics)
+      plot(seq(0, length(traffics)-1), traffics / 1000000, type="l", col="red", axes=F, xlab=NA, ylab=NA, ylim=c(0,100))
+      axis(side=4)
+      mtext(side=4, line=3, "Received Traffic Rate (Mbps)")
     }
 
+    dev.off()
+
+
+    #
+    # Draw std deviations
+    ybnds <- c(0, median(containerSds) + ySpace)
+    pdf(file=paste(data_path, "/", line, "/sds.pdf", sep=""), width=6.5, height=5)
+    par(mar=c(5, 5, 1, 3))
+    plot(0, type="n", ylim=ybnds, xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Standard Deviation RTT (",mu,"s)", sep="")), main="")
+
+    grid()
+
+    # Native Sd
+    lines(seq(0, length(nativeSds)-1), nativeSds, type="p", pch=20, col="gray")
+    # Container Means
+
+    lines(seq(0, length(containerSds)-1), containerSds, type="p", pch=20, col="black")
+
+    # Add x-axis
+    axis(1, at=x_label_at, labels=container_labels, las=2)
+
+    # Add legend
+    legend("bottomright", legend=c("container", "native"), col=c("black", "gray"),
+      pch=c(20,20), cex=0.8, bg="white")
+
+    dev.off()
+
+    #
+    # Draw difference
+    #
+    pdf(file=paste(data_path, "/", line, "/mean_diffs.pdf", sep=""), width=6.5, height=5)
+
+    par(mar=c(5, 5, 1, 3))
+    plot(0, type="n", ylim=c(0, max(containerMeans - nativeMeans)), xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Latency Overhead (",mu,"s)", sep="")), main="")
+
+    grid()
+
+    # Container Means
+    lines(seq(0, length(containerMeans)-1), containerMeans - nativeMeans, type="p", pch=20, col="black")
+
+
+    # Add x-axis
+    axis(1, at=x_label_at, labels=container_labels, las=2)
+
+    dev.off()
   }
-  close(con2)
-
-  #
-  # Draw lines for this CPU setting
-  #
-  # ybnds <- c(0, max(containerMeans))
-  ySpace <- 200
-  ybnds <- c(0, median(containerMeans) + ySpace)
-  xbnds <- c(0, length(containerMeans) - 1)
-  pdf(file=paste(data_path, "/", line, "/means.pdf", sep=""), width=6.5, height=5)
-  par(mar=c(5, 5, 1, 3))
-  plot(0, type="n", ylim=ybnds, xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Mean RTT (",mu,"s)", sep="")), main="")
-
-  grid()
-
-  # Native Mean
-  lines(seq(0, length(nativeMeans)-1), nativeMeans, type="p", pch=20, col="gray")
-  # Container Means
-
-  lines(seq(0, length(containerMeans)-1), containerMeans, type="p", pch=20, col="black")
-
-  # Add x-axis
-  axis(1, at=x_label_at, labels=container_labels, las=2)
-
-  # Add legend
-  legend("bottomright", legend=c("container", "native"), col=c("black", "gray"),
-    pch=c(20,20), cex=0.8, bg="white")
-
-  dev.off()
-
-
-  #
-  # Draw std deviations
-  ybnds <- c(0, median(containerSds) + ySpace)
-  pdf(file=paste(data_path, "/", line, "/sds.pdf", sep=""), width=6.5, height=5)
-  par(mar=c(5, 5, 1, 3))
-  plot(0, type="n", ylim=ybnds, xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Standard Deviation RTT (",mu,"s)", sep="")), main="")
-
-  grid()
-
-  # Native Sd
-  lines(seq(0, length(nativeSds)-1), nativeSds, type="p", pch=20, col="gray")
-  # Container Means
-
-  lines(seq(0, length(containerSds)-1), containerSds, type="p", pch=20, col="black")
-
-  # Add x-axis
-  axis(1, at=x_label_at, labels=container_labels, las=2)
-
-  # Add legend
-  legend("bottomright", legend=c("container", "native"), col=c("black", "gray"),
-    pch=c(20,20), cex=0.8, bg="white")
-
-  dev.off()
-
-  #
-  # Draw difference
-  #
-  pdf(file=paste(data_path, "/", line, "/mean_diffs.pdf", sep=""), width=6.5, height=5)
-
-  par(mar=c(5, 5, 1, 3))
-  plot(0, type="n", ylim=c(0, max(containerMeans - nativeMeans)), xlim=xbnds, xaxt="n", xlab="Number of containers", ylab=expression(paste("Latency Overhead (",mu,"s)", sep="")), main="")
-
-  grid()
-
-  # Container Means
-  lines(seq(0, length(containerMeans)-1), containerMeans - nativeMeans, type="p", pch=20, col="black")
-
-
-  # Add x-axis
-  axis(1, at=x_label_at, labels=container_labels, las=2)
-
-  dev.off()
 }
 close(con)
 
