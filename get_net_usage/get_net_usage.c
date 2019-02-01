@@ -147,6 +147,9 @@ main(int argc, char *argv[])
   double tx_packets_per_sec;
   struct timeval old_ts;
   struct timeval new_ts;
+  int first_time = 1;
+  int last_was_zero = 0;
+  struct timeval start_zero;
   double dt;
   int res;
   int i;
@@ -194,21 +197,47 @@ main(int argc, char *argv[])
       printf("Failed to read from proc file\n");
     }
 
-    // Compute rates
-    dt = tv_diff(&new_ts, &old_ts);
-    rx_bits_per_sec = (double)((new_counters.rx_bytes - old_counters.rx_bytes) * 8) / dt;
-    rx_packets_per_sec = (double)(new_counters.rx_packets - old_counters.rx_packets) / dt;
-    tx_bits_per_sec = (double)((new_counters.tx_bytes - old_counters.tx_bytes) * 8) / dt;
-    tx_packets_per_sec = (double)(new_counters.tx_packets - old_counters.tx_packets) / dt;
+    if (!first_time) {
+
+	    // Compute rates
+	    dt = tv_diff(&new_ts, &old_ts);
+	    rx_bits_per_sec = (double)((new_counters.rx_bytes - old_counters.rx_bytes) * 8) / dt;
+	    rx_packets_per_sec = (double)(new_counters.rx_packets - old_counters.rx_packets) / dt;
+	    tx_bits_per_sec = (double)((new_counters.tx_bytes - old_counters.tx_bytes) * 8) / dt;
+	    tx_packets_per_sec = (double)(new_counters.tx_packets - old_counters.tx_packets) / dt;
 
 
-    printf("[%ld.%06ld] rx_bps: %f rx_pps: %f tx_bps: %f tx_pps: %f\n",
-        new_ts.tv_sec,
-        new_ts.tv_usec,
-        rx_bits_per_sec,
-        rx_packets_per_sec,
-        tx_bits_per_sec,
-        tx_packets_per_sec);
+	    printf("[%ld.%06ld] rx_bps: %f rx_pps: %f tx_bps: %f tx_pps: %f\n",
+          new_ts.tv_sec,
+          new_ts.tv_usec,
+          rx_bits_per_sec,
+          rx_packets_per_sec,
+          tx_bits_per_sec,
+          tx_packets_per_sec);
+
+	    // Timeout logic incase of no traffic,
+      // otherwise reset last_was_zero flag
+      if (rx_bits_per_sec == 0 && tx_bits_per_sec == 0) {
+
+        // If we're in a string of no traffic check for time out,
+        // otherwise start counting no traffic time
+        if (last_was_zero) {
+          dt = tv_diff(&new_ts, &start_zero);
+          if (dt > timeout_sec) {
+            printf("Timing out after %f seconds of no traffic.\n", dt);
+            running = 0;
+          }
+        } else {
+          start_zero = new_ts;
+          last_was_zero = 1;
+        }
+      } else {
+        last_was_zero = 0;
+      }
+
+    } else {
+	    first_time = 0;
+    }
   
     // Save current state
     old_counters = new_counters;
