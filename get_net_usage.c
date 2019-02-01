@@ -31,7 +31,7 @@ usage(const char *name)
   printf("  Outputs statistics from /proc/net/dev every <interval> seconds.\n");
   printf("  If <interval> is not given, defaults to 2.\n");
   printf("  If no traffic is seen for <timeout> seconds, exits.\n");
-  printf("  The default <timeout> value is 120\n");
+  printf("  The default <timeout> value is 120.\n");
 }
 
 //
