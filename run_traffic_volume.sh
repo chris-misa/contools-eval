@@ -18,10 +18,10 @@ export PING_ARGS="-D -i 0.0 -s 56 10.10.1.3"
 #
 
 export MIN_CONTAINERS=0
-export MAX_CONTAINERS=500
-export CONTAINERS_STEP=1 # To change this actually, implementation below must change. . .
+export MAX_CONTAINERS=30
+export CONTAINERS_STEP=10 # To change this actually, implementation below must change. . .
 
-export MAX_CPUS=32
+export MAX_CPUS=16
 
 export TARGET_IFACE="eno1d1"
 
@@ -76,14 +76,19 @@ do
 
   kill -INT $TRAFFIC_PID
 
-	docker run -itd --name=${PING_CONTAINER_NAME}_$NO_CONTAINERS \
-		--net=$NETWORK \
-		--cpuset-cpus=${CPU_INDEX}-${CPU_INDEX} \
-		$PING_CONTAINER_IMAGE $PING_ARGS
+  I=0
+  while [[ $I -lt $CONTAINERS_STEP ]]
+  do
+    docker run -itd --name=${PING_CONTAINER_NAME}_$NO_CONTAINERS \
+      --net=$NETWORK \
+      --cpuset-cpus=${CPU_INDEX}-${CPU_INDEX} \
+      $PING_CONTAINER_IMAGE $PING_ARGS
+    I=$(( I + 1 ))
+    NO_CONTAINERS=$(( NO_CONTAINERS + 1 ))
+  done
 
-  NO_CONTAINERS=$(( NO_CONTAINERS + CONTAINERS_STEP ))
 
-  CPU_INDEX=$(( CPU_INDEX + 1 ))
+  CPU_INDEX=$(( (CPU_INDEX + 1) % MAX_CPUS ))
 
 done
 
