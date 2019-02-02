@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include <stdlib.h>
+#include <signal.h>
 
 #define MAX_DEV_FILE_SIZE 1024
 
@@ -134,6 +135,12 @@ tv_diff(struct timeval *t1, struct timeval *t2)
   return res;
 }
 
+void
+do_exit()
+{
+  running = 0;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -156,6 +163,8 @@ main(int argc, char *argv[])
 
   int interval_sec = 2;
   int timeout_sec = 120;
+
+  signal(SIGINT, do_exit);
 
   // Parse arguments
   if (argc < 2) {
