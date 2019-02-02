@@ -1,6 +1,11 @@
 //
 // Simple program to report the network usage from /proc/net/dev
 //
+// Probably need to rewrite this to read from sys/class/net/<iface-name>/statistics/{rx,tx}_{bytes,packets}.
+//
+// The problem is that as more containers are added, /proc/net/dev grows to big for this buffer and
+// we spend too much time searching for the target iface.
+//
 
 #include <stdint.h>
 #include <stdio.h>
