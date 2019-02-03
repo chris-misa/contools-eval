@@ -20,6 +20,9 @@
 #include <signal.h>
 
 #define MAX_DEV_FILE_SIZE 1024
+#define MAX_FILE_PATH_LEN 1024
+#define SYS_CLASS_NET_PATH "/sys/class/net/"
+#define PROC_NET_DEV_PATH "/proc/net/dev"
 
 struct net_dev_counters {
   uint64_t rx_bytes;
@@ -34,17 +37,78 @@ void
 usage(const char *name)
 {
   printf("Usage: %s <device> [-t <interval>] [-X <timeout>]\n", name);
-  printf("  Outputs statistics from /proc/net/dev every <interval> seconds.\n");
+  printf("  Outputs traffic statistics for the given interface every <interval> seconds.\n");
   printf("  If <interval> is not given, defaults to 2.\n");
   printf("  If no traffic is seen for <timeout> seconds, exits.\n");
   printf("  The default <timeout> value is 120.\n");
+  printf("  Reads from /sys/class/net/<device>/statistics/ by default.\n");
+}
+
+//
+// Reads a single integer from the given file
+//
+int
+read_statistic(uint64_t *num, const char *base_path, const char *file_name)
+{
+  char full_path[MAX_FILE_PATH_LEN + 1];
+  char buf[MAX_DEV_FILE_SIZE];
+  int base_path_len = strnlen(base_path, MAX_FILE_PATH_LEN);
+  int file_name_len = strnlen(file_name, MAX_FILE_PATH_LEN - base_path_len);
+  int fd;
+  int len;
+
+  memcpy(full_path, base_path, base_path_len);
+  memcpy(full_path + base_path_len, file_name, file_name_len);
+  full_path[base_path_len + file_name_len] = '\0';
+
+  fd = open(full_path, O_RDONLY);
+  if (fd < 0) {
+    fprintf(stderr, "Failed to open %s\n", full_path);
+    return -1;
+  }
+
+  if ((len = read(fd, buf, MAX_DEV_FILE_SIZE)) <= 0) {
+    fprintf(stderr, "Failed to read from %s\n", full_path);
+    close(fd);
+    return -1;
+  }
+  
+  close(fd);
+
+  *num = strtoll(buf, NULL, 10);
+
+  return 0;
+}
+
+//
+// Fills in the given counters struct by reading from the /sys/class/net/<dev_name>/statistics
+// files
+//
+int
+read_sys_net(struct net_dev_counters *counters, const char *dev_name)
+{
+  char stats_path[MAX_FILE_PATH_LEN+1];
+  int base_len = strnlen(SYS_CLASS_NET_PATH, MAX_FILE_PATH_LEN);
+  int dev_name_len = strnlen(dev_name, MAX_FILE_PATH_LEN - base_len);
+  int res = 0;
+
+  memcpy(stats_path, SYS_CLASS_NET_PATH, base_len);
+  memcpy(stats_path + base_len, dev_name, dev_name_len);
+  stats_path[base_len + dev_name_len] = '\0';
+
+  res += read_statistic(&counters->rx_bytes, stats_path, "/statistics/rx_bytes");
+  res += read_statistic(&counters->rx_packets, stats_path, "/statistics/rx_packets");
+  res += read_statistic(&counters->tx_bytes, stats_path, "/statistics/tx_bytes");
+  res += read_statistic(&counters->tx_packets, stats_path, "/statistics/tx_packets");
+
+  return res;
 }
 
 //
 // Fills in the given counters struct by reading from the provided filepath
 //
 int
-read_proc_net_dev(struct net_dev_counters *counters, const char *filepath, const char *dev_name)
+read_proc_net_dev(struct net_dev_counters *counters, const char *dev_name)
 {
   char buf[MAX_DEV_FILE_SIZE];
   char *buf_ptr;
@@ -53,9 +117,9 @@ read_proc_net_dev(struct net_dev_counters *counters, const char *filepath, const
   int fd;
   ssize_t len;
 
-  fd = open(filepath, O_RDONLY);
+  fd = open(PROC_NET_DEV_PATH, O_RDONLY);
   if (fd < 0) {
-    fprintf(stderr, "Failed to open %s\n", filepath);
+    fprintf(stderr, "Failed to open %s\n", PROC_NET_DEV_PATH);
     return -1;
   }
 
@@ -126,6 +190,7 @@ format_err_out:
   return -1;
 }
 
+
 //
 // timeval subtraction
 // returns the difference in seconds as a double
@@ -149,7 +214,6 @@ do_exit()
 int
 main(int argc, char *argv[])
 {
-  char *proc_net_dev_filepath = "/proc/net/dev";
   char *dev_name;
   struct net_dev_counters old_counters;
   struct net_dev_counters new_counters;
@@ -203,8 +267,8 @@ main(int argc, char *argv[])
     // Get a dumb timestamp and print
     gettimeofday(&new_ts, NULL);
 
-    // Read proc net dev file
-    res = read_proc_net_dev(&new_counters, proc_net_dev_filepath, dev_name);
+    // Read counters
+    res = read_sys_net(&new_counters, dev_name);
     if (res == 1) {
       printf("Failed to find device named %s\n", dev_name);
     } else if (res == -1) {
