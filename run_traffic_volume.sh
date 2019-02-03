@@ -3,6 +3,8 @@
 #
 # Test traffic volume outputed my an increasing number of containers.
 #
+# The control in this case is processes running natively.
+#
 
 export B="----------------"
 export C="-+-+-+-+-+-+-+-+"
@@ -11,19 +13,19 @@ export C="-+-+-+-+-+-+-+-+"
 # Arguments to measurement ping
 #
 
-export PING_ARGS="-D -i 0.0 -s 56 10.10.1.3"
+export PING_ARGS="-D -i 0.0 -s 56 10.10.1.1"
 
 #
 # Sequence of container counts
 #
 
 export MIN_CONTAINERS=0
-export MAX_CONTAINERS=30
-export CONTAINERS_STEP=10 # To change this actually, implementation below must change. . .
+export MAX_CONTAINERS=100
+export CONTAINERS_STEP=10
 
-export MAX_CPUS=16
+export MAX_CPUS=20
 
-export TARGET_IFACE="eno1d1"
+export TARGET_IFACE="ens1f1"
 
 # Docker network name to attach everything to
 export NETWORK="bridge"
@@ -59,16 +61,48 @@ export MANIFEST="manifest"
 mkdir $DATE_STR
 cd $DATE_STR
 
+# Get some basic meta-data
+echo "uname -a -> $(uname -a)" >> $META_DATA
+echo "docker -v -> $(docker -v)" >> $META_DATA
+echo "lsb_release -a -> $(lsb_release -a)" >> $META_DATA
+echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
+
 NO_CONTAINERS=$MIN_CONTAINERS
 CPU_INDEX=0
 
-while [[ $NO_CONTAINERS -le $MAX_CONTAINERS ]]
+echo $C Native run $C
+
+echo $B Getting traffic for $NO_CONTAINERS processes $B
+
+echo ${NO_CONTAINERS}_process_traffic >> $MANIFEST
+$GET_TRAFFIC $TARGET_IFACE > ${NO_CONTAINERS}_process_traffic &
+TRAFFIC_PID=$!
+echo "  Traffic monitor running with pid $TRAFFIC_PID"
+
+$PAUSE_CMD
+
+kill -INT $TRAFFIC_PID
+
+echo $B Done $B
+
+while [[ $NO_CONTAINERS -lt $MAX_CONTAINERS ]]
 do
 
-  echo $B Getting traffic for $NO_CONTAINERS containers $B
+  I=0
+  while [[ $I -lt $CONTAINERS_STEP ]]
+  do
+    # Launch ping process and pin it to CPU_INDEX
+    taskset --cpu-list ${CPU_INDEX}-${CPU_INDEX} \
+        $NATIVE_PING_CMD $PING_ARGS > /dev/null &
+    I=$(( I + 1 ))
+    CPU_INDEX=$(( (CPU_INDEX + 1) % MAX_CPUS ))
+    NO_CONTAINERS=$(( NO_CONTAINERS + 1 ))
+  done
 
-  echo ${NO_CONTAINERS}traffic >> $MANIFEST
-  $GET_TRAFFIC $TARGET_IFACE > ${NO_CONTAINERS}traffic &
+  echo $B Getting traffic for $NO_CONTAINERS processes $B
+
+  echo ${NO_CONTAINERS}_process_traffic >> $MANIFEST
+  $GET_TRAFFIC $TARGET_IFACE > ${NO_CONTAINERS}_process_traffic &
   TRAFFIC_PID=$!
   echo "  Traffic monitor running with pid $TRAFFIC_PID"
 
@@ -76,20 +110,73 @@ do
 
   kill -INT $TRAFFIC_PID
 
+  echo $B Done $B
+
+done
+
+echo $B Cleaning up $B
+
+pkill ping > /dev/null
+
+echo Cleaned up processes.
+
+
+
+NO_CONTAINERS=$MIN_CONTAINERS
+CPU_INDEX=0
+
+
+echo $C Container run $C
+
+echo $B Getting traffic for $NO_CONTAINERS containers $B
+
+echo ${NO_CONTAINERS}_container_traffic >> $MANIFEST
+$GET_TRAFFIC $TARGET_IFACE > ${NO_CONTAINERS}_container_traffic &
+TRAFFIC_PID=$!
+echo "  Traffic monitor running with pid $TRAFFIC_PID"
+
+$PAUSE_CMD
+
+kill -INT $TRAFFIC_PID
+
+echo $B Done $B
+
+while [[ $NO_CONTAINERS -lt $MAX_CONTAINERS ]]
+do
+
   I=0
   while [[ $I -lt $CONTAINERS_STEP ]]
   do
     docker run -itd --name=${PING_CONTAINER_NAME}_$NO_CONTAINERS \
       --net=$NETWORK \
       --cpuset-cpus=${CPU_INDEX}-${CPU_INDEX} \
-      $PING_CONTAINER_IMAGE $PING_ARGS
+      $PING_CONTAINER_IMAGE $PING_ARGS > /dev/null
     I=$(( I + 1 ))
+    CPU_INDEX=$(( (CPU_INDEX + 1) % MAX_CPUS ))
     NO_CONTAINERS=$(( NO_CONTAINERS + 1 ))
   done
 
+  echo $B Getting traffic for $NO_CONTAINERS containers $B
 
-  CPU_INDEX=$(( (CPU_INDEX + 1) % MAX_CPUS ))
+  echo ${NO_CONTAINERS}_container_traffic >> $MANIFEST
+  $GET_TRAFFIC $TARGET_IFACE > ${NO_CONTAINERS}_container_traffic &
+  TRAFFIC_PID=$!
+  echo "  Traffic monitor running with pid $TRAFFIC_PID"
+
+  $PAUSE_CMD
+
+  kill -INT $TRAFFIC_PID
+
+  echo $B Done $B
 
 done
 
-$STOP_ALL_CONTAINERS
+echo $B Cleaning up $B
+
+$STOP_ALL_CONTAINERS > /dev/null
+
+echo Cleaned up containers
+
+
+
+echo Done.
