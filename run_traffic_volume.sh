@@ -21,7 +21,7 @@ export PING_ARGS="-D -i 0.0 -s 56 10.10.1.1"
 
 export MIN_CONTAINERS=0
 export MAX_CONTAINERS=100
-export CONTAINERS_STEP=10
+export CONTAINERS_STEP=1
 
 export MAX_CPUS=20
 
