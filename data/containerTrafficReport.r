@@ -91,5 +91,13 @@ while (T) {
     cat("File:", line, "bandwidth:", bw, "\n")
   }
 }
+close(con)
 
+#
+# Draw the graphs
+#
+pdf(file=paste(data_path, "/summary.pdf", sep=""), width=6.5, height=5)
+par(mar=c(5, 5, 1, 1))
+plot(bws, rttMeans, xlab="Bandwidth (Mbps)", ylab=expression(paste("Mean RTT (",mu,"s)", sep="")), main="", type="l")
+dev.off()
 
