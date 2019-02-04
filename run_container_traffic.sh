@@ -13,11 +13,12 @@ export B="----------------"
 
 export PING_ARGS="-D -i 0.0 -s 56 10.10.1.3 -c 2000"
 
+export NUM_PINGS=5
+
 
 export TRAFFIC_SETTINGS="10 100 200 300 400 500 600"
 export TRAFFIC_UNIT="M" # appended to each element of TRAFFIC_SETTINGS
-
-TRAFFIC_TARGET="10.10.1.2"
+export TRAFFIC_TARGET="10.10.1.2"
 
 IPERF_ARGS="-P 16 -f m"
 
@@ -94,10 +95,13 @@ do
 
 	$PAUSE_CMD
 
-	# Take RTT measurement
-	docker exec $PING_CONTAINER_NAME \
-		$CONTAINER_PING_CMD $PING_ARGS \
-		> ${bw}${TRAFFIC_UNIT}_rtt.ping
+	# Take RTT measurements
+	for i in {1..$NUM_PINGS}
+	do
+		docker exec $PING_CONTAINER_NAME \
+			$CONTAINER_PING_CMD $PING_ARGS \
+			>> ${bw}${TRAFFIC_UNIT}_rtt.ping
+	done
 	echo ${bw}${TRAFFIC_UNIT}_rtt.ping >> $MANIFEST
 
 	echo "  measured rtt"
