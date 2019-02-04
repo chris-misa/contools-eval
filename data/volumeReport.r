@@ -23,8 +23,8 @@ readTrafficFile <- function(filePath) {
     matches <- grep(linePattern, line, value=T)
     if(length(matches) != 0) {
       ts <- as.numeric(sub(linePattern, "\\1", matches))
-      rx <- as.numeric(sub(linePattern, "\\2", matches))
-      tx <- as.numeric(sub(linePattern, "\\3", matches))
+      rx <- as.numeric(sub(linePattern, "\\2", matches)) / 1000000
+      tx <- as.numeric(sub(linePattern, "\\3", matches)) / 1000000
 
       timestamps <- c(timestamps, ts)
       rxBps <- c(rxBps, rx)
@@ -39,8 +39,14 @@ readTrafficFile <- function(filePath) {
 # Main work
 #
 
-rxMeans <- c()
-rxSds <- c()
+rxMeansContainer <- c()
+rxSdsContainer <- c()
+rxMeansProcess <- c()
+rxSdsProcess <- c()
+txMeansContainer <- c()
+txSdsContainer <- c()
+txMeansProcess <- c()
+txSdsProcess <- c()
 
 con <- file(paste(data_path, "/manifest", sep=""), "r")
 while (T) {
@@ -52,19 +58,33 @@ while (T) {
   filePath <- paste(data_path, "/", line, sep="")
 
   trafficData <- readTrafficFile(filePath)
-  rxMeans <- c(rxMeans, mean(trafficData$rx_bps))
-  rxSds <- c(rxSds, sd(trafficData$rx_bps))
-  
+
+  if (length(grep("container", line)) == 0) {
+    rxMeansProcess <- c(rxMeansProcess, mean(trafficData$rx_bps))
+    rxSdsProcess <- c(rxSdsProcess, sd(trafficData$rx_bps))
+    txMeansProcess <- c(txMeansProcess, mean(trafficData$tx_bps))
+    txSdsProcess <- c(txSdsProcess, sd(trafficData$tx_bps))
+  } else {
+    rxMeansContainer <- c(rxMeansContainer, mean(trafficData$rx_bps))
+    rxSdsContainer <- c(rxSdsContainer, sd(trafficData$rx_bps))
+    txMeansContainer <- c(txMeansContainer, mean(trafficData$tx_bps))
+    txSdsContainer <- c(txSdsContainer, sd(trafficData$tx_bps))
+  }
+    
   cat("File:", filePath, "\n")
 }
 
-cat("Means:\n")
-print(rxMeans)
+pdf(file=paste(data_path, "/rx_summary.pdf", sep=""), width=6.5, height=5)
+plot(rxMeansProcess, col="black", type="l", xlab="", ylab="Traffic Rate (Mbps)")
+lines(rxSdsProcess, col="gray")
+lines(rxMeansContainer, col="blue")
+lines(rxSdsContainer, col="lightblue")
+dev.off()
 
-cat("SDs:\n")
-print(rxSds)
 
-pdf(file=paste(data_path, "/summary.pdf", sep=""), width=6.5, height=5)
-plot(rxMeans)
-lines(rxSds, col="gray")
+pdf(file=paste(data_path, "/tx_summary.pdf", sep=""), width=6.5, height=5)
+plot(txMeansProcess, col="black", type="l", xlab="", ylab="Traffic Rate (Mbps)")
+lines(txSdsProcess, col="gray")
+lines(txMeansContainer, col="blue")
+lines(txSdsContainer, col="lightblue")
 dev.off()
