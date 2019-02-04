@@ -13,10 +13,11 @@ export B="----------------"
 
 export PING_ARGS="-D -i 0.0 -s 56 10.10.1.3 -c 2000"
 
-export NUM_PINGS=5
+# Repeat ping with above params this many times, sleeping in between
+export NUM_PINGS=10
 
 
-export TRAFFIC_SETTINGS="10 100 200 300 400 500 600"
+export TRAFFIC_SETTINGS="50 100 150 200 250 300 350 400 450 500 550 600 650"
 export TRAFFIC_UNIT="M" # appended to each element of TRAFFIC_SETTINGS
 export TRAFFIC_TARGET="10.10.1.2"
 
@@ -72,11 +73,13 @@ echo "sudo lshw -> $(sudo lshw)" >> $META_DATA
 docker run -itd --entrypoint=/bin/bash \
 	--net=$NETWORK \
 	--name=$PING_CONTAINER_NAME \
+	--cpuset-cpus="0-0" \
 	$PING_CONTAINER_IMAGE
 
 docker run -itd --entrypoint=/bin/bash \
 	--net=$NETWORK \
 	--name=$IPERF_CONTAINER_NAME \
+	--cpuset-cpus="1-15" \
 	$IPERF_CONTAINER_IMAGE
 
 echo $B Spun up containers $B
@@ -96,17 +99,18 @@ do
 	$PAUSE_CMD
 
 	# Take RTT measurements
-	for i in {1..$NUM_PINGS}
+	for i in `seq 1 1 $NUM_PINGS`
 	do
+		echo "  round ${i} . . ."
 		docker exec $PING_CONTAINER_NAME \
 			$CONTAINER_PING_CMD $PING_ARGS \
 			>> ${bw}${TRAFFIC_UNIT}_rtt.ping
+
+		$PAUSE_CMD
 	done
 	echo ${bw}${TRAFFIC_UNIT}_rtt.ping >> $MANIFEST
 
 	echo "  measured rtt"
-
-	$PAUSE_CMD
 
 	# Stop iperf traffic
 	pkill iperf
