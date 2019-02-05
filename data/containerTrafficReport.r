@@ -50,7 +50,7 @@ readIperfFile <- function(filePath) {
     }
     matches <- grep(linePattern, line, value=T)
     if (length(matches) != 0) {
-      bw <- as.numeric(sub(linePattern, "\\1", matches))
+      bw <- as.numeric(sub(linePattern, "\\1", matches)) / 1000
       break
     }
   }
@@ -58,46 +58,73 @@ readIperfFile <- function(filePath) {
   bw
 }
 
-rttMeans <- c()
-rttSds <- c()
-bws <- c()
+preproc_path <- paste(data_path, "/preproc", sep="")
+if (file.exists(preproc_path)) {
+  cat("Found preproc file\n")
+  data <- read.table(preproc_path)
+  rttMeans <- data$means
+  rttSds <- data$sds
+  bws <- data$bws
+} else {
 
-con <- file(paste(data_path, "/manifest", sep=""), "r")
-while (T) {
-  line <- readLines(con, n=1)
-  if (length(line) == 0) {
-    break
+  cat("Preprocessing. . .\n")
+
+  rttMeans <- c()
+  rttSds <- c()
+  bws <- c()
+
+  con <- file(paste(data_path, "/manifest", sep=""), "r")
+  while (T) {
+    line <- readLines(con, n=1)
+    if (length(line) == 0) {
+      break
+    }
+
+    # Handle ping files
+    if (length(grep("ping", line)) != 0) {
+      pingData <- readPingFile(paste(data_path, "/", line, sep=""))
+
+      mean <- mean(pingData$rtt)
+      sd <- sd(pingData$rtt)
+
+      rttMeans <- c(rttMeans, mean)
+      rttSds <- c(rttSds, sd)
+
+      cat("File:", line, "mean:", mean, "sd:", sd, "\n")
+    }
+
+    # Handle iperf files
+    if (length(grep("iperf", line)) != 0) {
+      bw <- readIperfFile(paste(data_path, "/", line, sep=""))
+
+      bws <- c(bws, bw)
+
+      cat("File:", line, "bandwidth:", bw, "\n")
+    }
   }
+  close(con)
 
-  # Handle ping files
-  if (length(grep("ping", line)) != 0) {
-    pingData <- readPingFile(paste(data_path, "/", line, sep=""))
-
-    mean <- mean(pingData$rtt)
-    sd <- sd(pingData$rtt)
-
-    rttMeans <- c(rttMeans, mean)
-    rttSds <- c(rttSds, sd)
-
-    cat("File:", line, "mean:", mean, "sd:", sd, "\n")
-  }
-
-  # Handle iperf files
-  if (length(grep("iperf", line)) != 0) {
-    bw <- readIperfFile(paste(data_path, "/", line, sep=""))
-
-    bws <- c(bws, bw)
-
-    cat("File:", line, "bandwidth:", bw, "\n")
-  }
+  write.table(data.frame(means=rttMeans, sds=rttSds, bws=bws),
+      file=preproc_path)
 }
-close(con)
 
 #
 # Draw the graphs
 #
+ybnds <- c(0, max(rttMeans, rttSds))
+xbnds <- c(0, max(bws))
 pdf(file=paste(data_path, "/summary.pdf", sep=""), width=6.5, height=5)
 par(mar=c(5, 5, 1, 1))
-plot(bws, rttMeans, xlab="Bandwidth (Mbps)", ylab=expression(paste("Mean RTT (",mu,"s)", sep="")), main="", type="l")
+plot(0, type="n", xlab="Traffic (Gbps)", ylab=expression(paste("RTT (",mu,"s)", sep="")), main="", ylim=ybnds, xlim=xbnds)
+
+grid()
+
+lines(bws, rttMeans, col="black", ylim=ybnds, type="l")
+lines(bws, rttSds, col="gray", ylim=ybnds, type="l")
+
+legend("topleft", legend=c("mean", "standard deviation"),
+      col=c("black", "gray"),
+      lty=1, cex=0.8, bg="white")
+
 dev.off()
 
