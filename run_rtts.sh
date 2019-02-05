@@ -14,18 +14,17 @@ export PING_ARGS="-D -i 0.0 -s 56 -c 2000"
 # Sequence of container counts
 #
 
-# export CONTAINER_COUNTS="`seq 0 16 96`"
-# export CONTAINER_COUNTS="`seq 0 1 10`"
+# export CONTAINER_COUNTS="`seq 0 1 100`"
 export CONTAINER_COUNTS="5"
 
 #
 # Array of cpu counts
 #
 
-export CPU_COUNTS=(20)
+export CPU_COUNTS=(16)
 
-export CONTAINER_NETWORK_TARGET="10.10.1.1"
-export CONTAINER_HOST_TARGET="10.10.1.2"
+export CONTAINER_NETWORK_TARGET="10.10.1.2"
+export CONTAINER_HOST_TARGET="10.10.1.1"
 
 # Arguments handed to ping in traffic containers
 export BG_PING_ARGS="-i 0.0 -s 56 10.10.1.3"
@@ -87,9 +86,9 @@ for i in ${CPU_COUNTS[@]}; do
 	echo "$C Container - Network $C"
 	../cn_run.sh
 
-	echo "$C Container - Host $C"
-	../ch_run.sh
+	#echo "$C Container - Host $C"
+	#../ch_run.sh
 
-	echo "$C Container - Container $C"
-	../cc_run.sh
+	#echo "$C Container - Container $C"
+	#../cc_run.sh
 done
