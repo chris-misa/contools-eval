@@ -293,6 +293,8 @@ main(int argc, char *argv[])
           tx_bits_per_sec,
           tx_packets_per_sec);
 
+      fflush(stdout);
+
 	    // Timeout logic incase of no traffic,
       // otherwise reset last_was_zero flag
       if (rx_bits_per_sec == 0 && tx_bits_per_sec == 0) {
