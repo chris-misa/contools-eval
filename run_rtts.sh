@@ -15,13 +15,13 @@ export PING_ARGS="-D -i 0.0 -s 56 -c 2000"
 #
 
 # export CONTAINER_COUNTS="`seq 0 1 100`"
-export CONTAINER_COUNTS="5"
+export CONTAINER_COUNTS="1000"
 
 #
 # Array of cpu counts
 #
 
-export CPU_COUNTS=(16)
+export CPU_COUNTS=(56)
 
 export CONTAINER_NETWORK_TARGET="10.10.1.2"
 export CONTAINER_HOST_TARGET="10.10.1.1"

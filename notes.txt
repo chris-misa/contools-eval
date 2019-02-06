@@ -1,0 +1,10 @@
+Best to mount a larger partition and move docker onto that: lower FS overheads.
+
+In /lib/systemd/system/docker.service add -g /path/to/new
+to line ExecStart=/usr/bin/docker daemon . . .
+
+Then,
+# systemctl stop docker
+# systemctl daemon-reload
+# rsync -aqxP /var/lib/docker /path/to/new
+# systemctl start docker
