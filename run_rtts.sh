@@ -15,8 +15,7 @@ export PING_ARGS="-D -i 0.0 -s 56 -c 2000"
 #
 
 export CONTAINER_COUNTS="`seq 0 10 1000`"
-# export CONTAINER_COUNTS="5 1000"
-
+# export CONTAINER_COUNTS="1000"
 #
 # Array of cpu counts
 #
