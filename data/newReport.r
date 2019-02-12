@@ -14,7 +14,7 @@ n_cpus <- c(8)
 # x_label_at <- seq(0, 100, 10)
 
 n_containers <- seq(0, 100, 1)
-container_labels <- seq(0, 100, 10)
+container_labels <- seq(0, 1000, 100)
 x_label_at <- seq(0, 100, 10)
 
 #n_containers <- seq(0, 96, 16)
@@ -177,6 +177,7 @@ while (T) {
     #
     # Draw lines for this CPU setting
     #
+
     # ybnds <- c(0, max(containerMeans))
     ySpace <- 200
     ybnds <- c(0, median(containerMeans) + ySpace)
@@ -204,9 +205,16 @@ while (T) {
     # Perhaps add traffic
     if (exists("traffic")) {
       print(traffics)
-      plot(seq(0, length(traffics)-1), traffics / 1000000, type="l", col="red", axes=F, xlab=NA, ylab=NA, ylim=c(0,100))
+      plot(seq(0, length(traffics)-1), traffics / 1000000, type="l", col="red", axes=F, xlab=NA, ylab=NA, ylim=c(0,max(traffics / 1000000)))
       axis(side=4)
       mtext(side=4, line=3, "Received Traffic Rate (Mbps)")
+
+      write.table(file=paste(data_path, "/", line, "/table", sep=""),
+          data.frame(nativeMeans=nativeMeans,
+                     containerMeans=containerMeans,
+                     nativeSds=nativeSds,
+                     containerSds=containerSds,
+                     traffics=traffics))
     }
 
     dev.off()
