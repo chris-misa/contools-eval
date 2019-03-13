@@ -22,6 +22,29 @@ x_label_at <- seq(0, 100, 10)
 #x_label_at <- seq(0, 6, 1)
 
 #
+# Work around to draw intervals around
+# points in graph
+#
+drawArrows <- function(xs, ys, sds, color) {
+  arrows(xs, ys - sds,
+         xs, ys + sds,
+         length=0.01, angle=90, code=3, col=color)
+}
+
+
+#
+# Compute confidence intervals
+#
+
+confidence <- 0.90
+getConfidence <- function(data) {
+  a <- confidence + 0.5 * (1.0 - confidence)
+  n <- length(data)
+  t_an <- qt(a, df=n-1)
+  t_an * sd(data) / sqrt(length(data))
+}
+
+#
 # Read and parse a dump from ping
 #
 readPingFile <- function(filePath) {
@@ -114,9 +137,12 @@ while (T) {
   } else {
     containerMeans <- c()
     containerSds <- c()
+    containerErrors <- c()
     nativeMeans <- c()
     nativeSds <- c()
+    nativeErrors <- c()
     traffics <- c()
+    
 
     # Read through container param manifest
     con2 <- file(paste(data_path, "/", line, "/manifest", sep=""), "r")
@@ -134,12 +160,14 @@ while (T) {
 
       newMean <- mean(times)
       newSd <- sd(times)
+      newError <- getConfidence(times)
 
 
       # Sort based on native / container
       if (length(grep("[0-9]+native.*", line2)) != 0) {
         nativeMeans <- c(nativeMeans, newMean)
         nativeSds <- c(nativeSds, newSd)
+        nativeErrors <- c(nativeErrors, newError)
 
         # Sort based on topology
         if (length(grep(".*CC", line)) != 0) {
@@ -153,6 +181,7 @@ while (T) {
       } else if (length(grep("[0-9]+container.*", line2)) != 0) {
         containerMeans <- c(containerMeans, newMean)
         containerSds <- c(containerSds, newSd)
+        containerErrors <- c(containerErrors, newError)
 
         if (exists("traffic")) {
           traffics <- c(traffics, trafficAtTime(pingFrame$ts[[1]], traffic)$rx_bps)
@@ -190,9 +219,14 @@ while (T) {
 
     # Native Mean
     lines(seq(0, length(nativeMeans)-1), nativeMeans, type="p", pch=20, col="gray")
-    # Container Means
 
+    # Native error bars
+    drawArrows(seq(0, length(nativeMeans)-1), nativeMeans, nativeErrors, "gray")
+    # Container Means
     lines(seq(0, length(containerMeans)-1), containerMeans, type="p", pch=20, col="black")
+    # Container error bars
+    drawArrows(seq(0, length(containerMeans)-1), containerMeans, containerErrors, "black")
+
 
     # Add x-axis
     axis(1, at=x_label_at, labels=container_labels, las=2)
