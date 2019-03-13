@@ -12,6 +12,28 @@ SANDBOX_IFACE <- "eth0"
 DOCKER_IFACE <- "docker0"
 HOST_IFACE <- "eno1d1"
 
+#
+# Work around to draw intervals around
+# points in graph
+#
+drawArrows <- function(xs, ys, sds, color) {
+  arrows(xs, ys - sds,
+         xs, ys + sds,
+         length=0.01, angle=90, code=3, col=color)
+}
+
+#
+# Compute confidence intervals
+#
+
+confidence <- 0.90
+getConfidence <- function(data) {
+  a <- confidence + 0.5 * (1.0 - confidence)
+  n <- length(data)
+  t_an <- qt(a, df=n-1)
+  t_an * sd(data) / sqrt(length(data))
+}
+
 parseTraceLine <- function(line) {
   linePattern <- ".+ \\[([0-9]+)\\] +([0-9\\.]+): +([a-z_]+): +dev=([a-z0-9]+) .*skbaddr=([x0-9a-f]+) .*"
   matches <- grep(linePattern, line, value=T)
@@ -242,65 +264,108 @@ recvStateMachine <- function(flow) {
 # Main work starts here
 #
 
-sendData <- matrix(,nrow=3,ncol=0)
-recvData <- matrix(,nrow=3,ncol=0)
+SAVED_DATA_PATH <- paste(data_path, "/saved_r_data", sep="")
+if (file.exists(SAVED_DATA_PATH)) {
 
-con <- file(paste(data_path, "/manifest", sep=""), "r")
-while (T) {
-  line <- readLines(con, n=1)
-  if (length(line) == 0) {
-    break
+  data <- dget(SAVED_DATA_PATH)
+
+  sendData <- data$savedSendData
+  recvData <- data$savedRecvData
+
+  sendDataError <- data$savedSendDataError
+  recvDataError <- data$savedRecvDataError
+
+  cat("Read saved data\n");
+} else {
+
+  sendData <- matrix(,nrow=3,ncol=0)
+  recvData <- matrix(,nrow=3,ncol=0)
+
+  sendDataError <- matrix(,nrow=3,ncol=0)
+  recvDataError <- matrix(,nrow=3,ncol=0)
+
+  con <- file(paste(data_path, "/manifest", sep=""), "r")
+  while (T) {
+    line <- readLines(con, n=1)
+    if (length(line) == 0) {
+      break
+    }
+
+    cat("File: ", line, ":\n")
+
+    sends <- data.frame()
+    recvs <- data.frame()
+
+    flows <- readNetTrace(paste(data_path, "/", line, sep=""))
+
+    dumpFlowsToFile(flows, paste(data_path, "flows", line, sep=""))
+
+    for (f in ls(flows)) {
+      sends <- rbind(sends, sendStateMachine(flows[[f]]))
+      recvs <- rbind(recvs, recvStateMachine(flows[[f]]))
+    }
+
+    sendSyscallMean <- mean(sends$syscallTimes)
+    sendSandboxMean <- mean(sends$sandboxTimes)
+    sendRoutingMean <- mean(sends$routingTimes)
+    recvSyscallMean <- mean(recvs$syscallTimes)
+    recvSandboxMean <- mean(recvs$sandboxTimes)
+    recvRoutingMean <- mean(recvs$routingTimes)
+
+    sendSyscallError <- getConfidence(sends$syscallTimes)
+    sendSandboxError <- getConfidence(sends$sandboxTimes)
+    sendRoutingError <- getConfidence(sends$routingTimes)
+    recvSyscallError <- getConfidence(recvs$syscallTimes)
+    recvSandboxError <- getConfidence(recvs$sandboxTimes)
+    recvRoutingError <- getConfidence(recvs$routingTimes)
+
+    sendData <- cbind(sendData, c(sendSyscallMean, sendSandboxMean, sendRoutingMean))
+    recvData <- cbind(recvData, c(recvSyscallMean, recvSandboxMean, recvRoutingMean))
+
+    sendDataError <- cbind(sendDataError, c(sendSyscallError, sendSandboxError, sendRoutingError))
+    recvDataError <- cbind(recvDataError, c(recvSyscallError, recvSandboxError, recvRoutingError))
+
+    cat("Saw ", nrow(sends), " sends and ", nrow(recvs), "recvs\n")
+    cat("Send means: syscalls: ", sendSyscallMean, " sandbox: ", sendSandboxMean, " routing: ", sendRoutingMean, "\n")
+    cat("Recv means: syscalls: ", recvSyscallMean, " sandbox: ", recvSandboxMean, " routing: ", recvRoutingMean, "\n")
   }
 
-  cat("File: ", line, ":\n")
-
-  sends <- data.frame()
-  recvs <- data.frame()
-
-  flows <- readNetTrace(paste(data_path, "/", line, sep=""))
-
-  dumpFlowsToFile(flows, paste(data_path, "flows", line, sep=""))
-
-  for (f in ls(flows)) {
-    sends <- rbind(sends, sendStateMachine(flows[[f]]))
-    recvs <- rbind(recvs, recvStateMachine(flows[[f]]))
-  }
-
-  sendSyscallMean <- mean(sends$syscallTimes)
-  sendSandboxMean <- mean(sends$sandboxTimes)
-  sendRoutingMean <- mean(sends$routingTimes)
-  recvSyscallMean <- mean(recvs$syscallTimes)
-  recvSandboxMean <- mean(recvs$sandboxTimes)
-  recvRoutingMean <- mean(recvs$routingTimes)
-
-  sendData <- cbind(sendData, c(sendSyscallMean, sendSandboxMean, sendRoutingMean))
-  recvData <- cbind(recvData, c(recvSyscallMean, recvSandboxMean, recvRoutingMean))
-
-  cat("Saw ", nrow(sends), " sends and ", nrow(recvs), "recvs\n")
-  cat("Send means: syscalls: ", sendSyscallMean, " sandbox: ", sendSandboxMean, " routing: ", sendRoutingMean, "\n")
-  cat("Recv means: syscalls: ", recvSyscallMean, " sandbox: ", recvSandboxMean, " routing: ", recvRoutingMean, "\n")
+  dput(list(savedSendData=sendData,
+            savedRecvData=recvData,
+            savedSendDataError=sendDataError,
+            savedRecvDataError=recvDataError), file=SAVED_DATA_PATH)
+  cat("Saved parseing results for next time.\n")
 }
 
-print(sendData)
-print(recvData)
+print(sendDataError)
+print(recvDataError)
 
 
 pdf(file=paste(data_path, "/sendMeans.pdf", sep=""), width=6.5, height=5)
-barplot(sendData, beside=F,
+barCenters <- barplot(sendData, beside=T,
     ylab=expression(paste("Time (",mu,"s)", sep="")),
     xlab="Number of containers",
     names.arg=containerNames,
     legend=c("syscall", "sandbox", "routing"),
+    col=c("#bd0000", "#2e97ff", "#99ff99"),
+    ylim=c(0,max(as.vector(sendData) + as.vector(sendDataError))),
     args.legend=list(x="topleft"))
+
+drawArrows(barCenters, as.vector(sendData), as.vector(sendDataError), "black")
 
 dev.off()
 
 
 pdf(file=paste(data_path, "/recvMeans.pdf", sep=""), width=6.5, height=5)
-barplot(recvData, beside=F,
+barCenters <- barplot(recvData, beside=T,
     ylab=expression(paste("Time (",mu,"s)", sep="")),
     xlab="Number of containers",
     names.arg=containerNames,
     legend=c("syscall", "sandbox", "routing"),
+    col=c("#bd0000", "#2e97ff", "#99ff99"),
+    ylim=c(0,max(as.vector(recvData) + as.vector(recvDataError))),
     args.legend=list(x="topleft"))
+
+drawArrows(barCenters, as.vector(recvData), as.vector(recvDataError), "black")
+
 dev.off()
